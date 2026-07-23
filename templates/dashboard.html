@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<!--
+  templates/dashboard.html
+  Plantilla Jinja2 servida en vivo por app.py (Flask) — no es un archivo
+  estático generado de antemano: se renderiza en cada petición con los
+  datos actuales del proyecto consultado.
+-->
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+{% include "_theme_init.html" %}
+<title>Reporte SonarQube · {{ data.project.name }}</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.0.3/styles/ag-grid.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.0.3/styles/ag-theme-alpine.css">
+<script src="https://cdn.jsdelivr.net/npm/ag-grid-community@31.0.3/dist/ag-grid-community.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<!-- Overlay de carga: se muestra al cambiar de proyecto o refrescar -->
+<div id="loadingOverlay" class="loading-overlay no-print">
+  <div class="loading-content">
+    <canvas class="loading-orb" data-orb data-orb-size="92" data-orb-state="searching" aria-label="Cargando"></canvas>
+    <p class="loading-text">
+      Estamos preparando tu reporte<span class="dots"><span>.</span><span>.</span><span>.</span></span>
+    </p>
+  </div>
+</div>
+
+<!-- Popup de exportación a PDF: NO bloquea la pantalla, el usuario sigue
+     viendo y navegando el reporte mientras se genera en el servidor. -->
+<div id="pdfExportToast" class="pdf-export-toast no-print" hidden>
+  <canvas class="pdf-export-toast-icon" data-orb data-orb-size="40" data-orb-state="working" aria-label="Exportando"></canvas>
+  <div class="pdf-export-toast-body">
+    <p class="pdf-export-toast-title">Exportando reporte a PDF</p>
+    <p id="pdfExportMessage" class="pdf-export-toast-message">Consultando datos de SonarQube…</p>
+    <div class="loading-progress-track">
+      <div class="loading-progress-fill"></div>
+    </div>
+  </div>
+</div>
+
+<div class="floating-controls no-print">
+  {% include "_theme_toggle.html" %}
+  <button id="backToTop" class="fab" title="Volver arriba">
+    <i class="bi bi-arrow-up"></i>
+  </button>
+</div>
+
+<div id="toastContainer" class="toast-container no-print"></div>
+
+<!-- ===================== HEADER ===================== -->
+<header class="report-header">
+  <div class="header-inner">
+    <div class="header-top">
+      <div class="header-brand">
+        <div class="logo-dot"><i class="bi bi-shield-check"></i></div>
+        <div>
+          <h1 class="project-title">{{ data.project.name }}</h1>
+          <p class="project-key">{{ data.project.key }}</p>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        {% if data.all_projects %}
+        <select id="projectSelector" class="project-select" title="Cambiar de proyecto">
+          {% for p in data.all_projects %}
+          <option value="{{ p.key }}" {% if p.key == data.project.key %}selected{% endif %}>{{ p.name }}</option>
+          {% endfor %}
+        </select>
+        {% endif %}
+
+        {% if data.quality_gate.status == 'OK' %}
+          <span class="qg-pill qg-ok"><i class="bi bi-check-circle-fill"></i> Passed</span>
+        {% elif data.quality_gate.status == 'ERROR' %}
+          <span class="qg-pill qg-error"><i class="bi bi-x-circle-fill"></i> Failed</span>
+        {% else %}
+          <span class="qg-pill qg-none"><i class="bi bi-dash-circle-fill"></i> {{ data.quality_gate.status }}</span>
+        {% endif %}
+
+        {% include "_user_menu.html" %}
+      </div>
+    </div>
+
+    <div class="header-bottom">
+      <div class="header-meta">
+        <span><i class="bi bi-calendar-event"></i> {{ data.generated_at.date }}</span>
+        <span><i class="bi bi-clock"></i> {{ data.generated_at.time }}</span>
+        <span class="last-updated-pill" title="Los datos se cachean brevemente antes de volver a consultar SonarQube">
+          <i class="bi bi-arrow-repeat"></i> <span id="lastUpdatedText">Actualizado justo ahora</span>
+        </span>
+      </div>
+
+      <div class="header-actions no-print">
+        <a id="refreshBtn" class="btn-ghost" href="{{ url_for('project_dashboard', project_key=data.project.key, refresh=1) }}">
+          <i class="bi bi-arrow-clockwise"></i> Actualizar
+        </a>
+        <a class="btn-ghost" href="{{ url_for('compare_projects', keys=data.project.key) }}">
+          <i class="bi bi-bar-chart-line"></i> Comparar
+        </a>
+        <a class="btn-ghost" href="{{ url_for('select_project') }}" title="Ver todos los proyectos disponibles">
+          <i class="bi bi-grid"></i> Todos los proyectos
+        </a>
+        <div class="pdf-export-group">
+          <button
+            id="exportPdfBtn"
+            class="btn-solid pdf-export-main"
+            type="button"
+            data-pdf-base-url="{{ url_for('project_pdf', project_key=data.project.key) }}"
+            data-filename-base="reporte-sonarqube-{{ data.project.key }}-{{ data.generated_at.date }}"
+            data-pdf-detail="full"
+          >
+            <i class="bi bi-file-earmark-pdf"></i> <span id="exportPdfLabel">Exportar PDF (completo)</span>
+          </button>
+          <button id="pdfDetailCaret" type="button" class="btn-solid pdf-export-caret" title="Elegir nivel de detalle" aria-haspopup="listbox" aria-expanded="false">
+            <i class="bi bi-chevron-down"></i>
+          </button>
+          <div id="pdfDetailMenu" class="pdf-detail-menu" hidden role="listbox">
+            <div class="pdf-detail-option selected" data-detail="full" role="option">
+              <i class="bi bi-file-earmark-text"></i>
+              <span>Completo <small>Incluye el detalle de issues</small></span>
+              <i class="bi bi-check-lg option-check"></i>
+            </div>
+            <div class="pdf-detail-option" data-detail="summary" role="option">
+              <i class="bi bi-file-earmark-easel"></i>
+              <span>Resumen ejecutivo <small>Solo portada, métricas y gráficos</small></span>
+              <i class="bi bi-check-lg option-check"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="main-content">
+
+  <!-- ===================== HEALTH SCORE (RESUMEN EJECUTIVO) ===================== -->
+  <section class="health-hero">
+    <div class="health-score-circle {{ data.health.css }}">
+      <span class="health-score-number">{{ data.health.score }}</span>
+      <span class="health-score-letter">{{ data.health.letter }}</span>
+    </div>
+    <div class="health-hero-body">
+      <p class="health-hero-eyebrow">Estado general del proyecto</p>
+      <h2 class="health-hero-label">{{ data.health.label }}</h2>
+      <p class="health-hero-detail">
+        Combina los ratings de Reliability, Security y Maintainability
+        {% if data.quality_gate.status == 'ERROR' %}(limitado por el Quality Gate no superado){% endif %}.
+      </p>
+    </div>
+
+    <div class="health-hero-trend">
+      {% if data.history|length >= 2 %}
+      <p class="health-trend-label"><i class="bi bi-graph-up"></i> Tendencia de bugs ({{ data.history|length }} días)</p>
+      <div class="health-trend-chart">
+        <canvas id="chartTrend"></canvas>
+      </div>
+      {% else %}
+      <p class="health-trend-empty">
+        <i class="bi bi-hourglass-split"></i><br>
+        Aún no hay suficiente historial.<br>Vuelve a consultar en otro día para ver la tendencia.
+      </p>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- ===================== TARJETAS DE RESUMEN ===================== -->
+  <div class="reorder-toolbar no-print">
+    <span class="reorder-hint"><i class="bi bi-arrows-move"></i> Arrastra una tarjeta para reordenar</span>
+    <button type="button" class="reorder-reset-btn" data-reset-target="cardsGrid" title="Volver al orden original">
+      <i class="bi bi-arrow-counterclockwise"></i> Restablecer orden
+    </button>
+  </div>
+  <section class="cards-grid" id="cardsGrid">
+    <div class="metric-card {{ 'card-critical' if data.measures.bugs > 0 else 'card-ok' }}" data-key="bugs">
+      <span class="card-drag-handle" title="Arrastrar para reordenar"><i class="bi bi-grip-vertical"></i></span>
+      <div class="metric-icon"><i class="bi bi-bug-fill"></i></div>
+      <div class="metric-body">
+        <div class="metric-value counter" data-target="{{ data.measures.bugs }}">0</div>
+        <div class="metric-label">Bugs
+          <i class="bi bi-info-circle info-tip" tabindex="0" data-tooltip="Errores de código que causan un comportamiento incorrecto o inesperado en tiempo de ejecución."></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="metric-card {{ 'card-critical' if data.measures.vulnerabilities > 0 else 'card-ok' }}" data-key="vulnerabilities">
+      <span class="card-drag-handle" title="Arrastrar para reordenar"><i class="bi bi-grip-vertical"></i></span>
+      <div class="metric-icon"><i class="bi bi-shield-exclamation"></i></div>
+      <div class="metric-body">
+        <div class="metric-value counter" data-target="{{ data.measures.vulnerabilities }}">0</div>
+        <div class="metric-label">Vulnerabilidades
+          <i class="bi bi-info-circle info-tip" tabindex="0" data-tooltip="Puntos del código que podrían ser explotados por un atacante (seguridad)."></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="metric-card {{ 'card-warning' if data.measures.code_smells > 100 else 'card-ok' }}" data-key="code_smells">
+      <span class="card-drag-handle" title="Arrastrar para reordenar"><i class="bi bi-grip-vertical"></i></span>
+      <div class="metric-icon"><i class="bi bi-emoji-frown-fill"></i></div>
+      <div class="metric-body">
+        <div class="metric-value counter" data-target="{{ data.measures.code_smells }}">0</div>
+        <div class="metric-label">Code Smells
+          <i class="bi bi-info-circle info-tip" tabindex="0" data-tooltip="Código que funciona pero es difícil de mantener o entender a futuro (deuda técnica)."></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="metric-card {{ 'card-ok' if data.measures.coverage >= 50 else 'card-warning' }}" data-key="coverage">
+      <span class="card-drag-handle" title="Arrastrar para reordenar"><i class="bi bi-grip-vertical"></i></span>
+      <div class="metric-icon"><i class="bi bi-graph-up-arrow"></i></div>
+      <div class="metric-body">
+        <div class="metric-value">{{ "%.1f"|format(data.measures.coverage) }}%</div>
+        <div class="metric-label">Cobertura
+          <i class="bi bi-info-circle info-tip" tabindex="0" data-tooltip="Porcentaje del código cubierto por pruebas automatizadas. Más alto es mejor."></i>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill fill-coverage" style="width:{{ data.measures.coverage }}%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="metric-card {{ 'card-warning' if data.measures.duplication > 10 else 'card-ok' }}" data-key="duplication">
+      <span class="card-drag-handle" title="Arrastrar para reordenar"><i class="bi bi-grip-vertical"></i></span>
+      <div class="metric-icon"><i class="bi bi-files"></i></div>
+      <div class="metric-body">
+        <div class="metric-value">{{ "%.1f"|format(data.measures.duplication) }}%</div>
+        <div class="metric-label">Duplicación
+          <i class="bi bi-info-circle info-tip" tabindex="0" data-tooltip="Porcentaje de líneas de código duplicadas en el proyecto. Más bajo es mejor."></i>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill fill-duplication" style="width:{{ data.measures.duplication }}%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="metric-card card-neutral" data-key="ncloc">
+      <span class="card-drag-handle" title="Arrastrar para reordenar"><i class="bi bi-grip-vertical"></i></span>
+      <div class="metric-icon"><i class="bi bi-code-slash"></i></div>
+      <div class="metric-body">
+        <div class="metric-value counter" data-target="{{ data.measures.ncloc }}">0</div>
+        <div class="metric-label">Líneas de código
+          <i class="bi bi-info-circle info-tip" tabindex="0" data-tooltip="Cantidad de líneas de código propias del proyecto (sin contar comentarios ni líneas en blanco)."></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="metric-card rating-card" data-key="reliability">
+      <span class="card-drag-handle" title="Arrastrar para reordenar"><i class="bi bi-grip-vertical"></i></span>
+      <div class="metric-icon rating-circle {{ data.ratings_css.reliability }}">{{ data.measures.reliability_rating }}</div>
+      <div class="metric-body">
+        <div class="metric-value">{{ data.measures.reliability_rating }}</div>
+        <div class="metric-label">Reliability
+          <i class="bi bi-info-circle info-tip" tabindex="0" data-tooltip="Rating de fiabilidad (A-E) según la cantidad y severidad de bugs. A es lo mejor, E lo peor."></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="metric-card rating-card" data-key="security">
+      <span class="card-drag-handle" title="Arrastrar para reordenar"><i class="bi bi-grip-vertical"></i></span>
+      <div class="metric-icon rating-circle {{ data.ratings_css.security }}">{{ data.measures.security_rating }}</div>
+      <div class="metric-body">
+        <div class="metric-value">{{ data.measures.security_rating }}</div>
+        <div class="metric-label">Security
+          <i class="bi bi-info-circle info-tip" tabindex="0" data-tooltip="Rating de seguridad (A-E) según las vulnerabilidades detectadas. A es lo mejor, E lo peor."></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="metric-card rating-card" data-key="maintainability">
+      <span class="card-drag-handle" title="Arrastrar para reordenar"><i class="bi bi-grip-vertical"></i></span>
+      <div class="metric-icon rating-circle {{ data.ratings_css.maintainability }}">{{ data.measures.maintainability_rating }}</div>
+      <div class="metric-body">
+        <div class="metric-value">{{ data.measures.maintainability_rating }}</div>
+        <div class="metric-label">Maintainability
+          <i class="bi bi-info-circle info-tip" tabindex="0" data-tooltip="Rating de mantenibilidad (A-E) según los code smells y el esfuerzo estimado para corregirlos."></i>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== GRÁFICOS ===================== -->
+  <div class="reorder-toolbar no-print">
+    <span class="reorder-hint"><i class="bi bi-arrows-move"></i> Arrastra una tarjeta para reordenar</span>
+    <button type="button" class="reorder-reset-btn" data-reset-target="chartsGrid" title="Volver al orden original">
+      <i class="bi bi-arrow-counterclockwise"></i> Restablecer orden
+    </button>
+  </div>
+  <section class="charts-grid" id="chartsGrid">
+    <div class="chart-card" data-key="bar_comparison">
+      <span class="card-drag-handle" title="Arrastrar para reordenar"><i class="bi bi-grip-vertical"></i></span>
+      <h3>Bugs · Code Smells · Vulnerabilidades</h3>
+      <canvas id="chartBarComparison"></canvas>
+    </div>
+
+    <div class="chart-card" data-key="doughnut_coverage">
+      <span class="card-drag-handle" title="Arrastrar para reordenar"><i class="bi bi-grip-vertical"></i></span>
+      <h3>Cobertura vs Duplicación</h3>
+      <canvas id="chartDoughnutCoverage"></canvas>
+    </div>
+
+    <div class="chart-card" data-key="pie_severity">
+      <span class="card-drag-handle" title="Arrastrar para reordenar"><i class="bi bi-grip-vertical"></i></span>
+      <h3>Distribución de severidades</h3>
+      <canvas id="chartPieSeverity"></canvas>
+    </div>
+
+    <div class="chart-card chart-card-wide" data-key="top_files">
+      <span class="card-drag-handle" title="Arrastrar para reordenar"><i class="bi bi-grip-vertical"></i></span>
+      <h3>Top 10 archivos con más issues</h3>
+      <canvas id="chartTopFiles"></canvas>
+    </div>
+
+    <div class="chart-card chart-card-wide" data-key="top_rules">
+      <span class="card-drag-handle" title="Arrastrar para reordenar"><i class="bi bi-grip-vertical"></i></span>
+      <h3>Top 10 reglas más incumplidas</h3>
+      <canvas id="chartTopRules"></canvas>
+    </div>
+  </section>
+
+  <!-- ===================== CONCLUSIONES Y RECOMENDACIONES ===================== -->
+  <section class="insights-grid">
+    <div class="insight-card">
+      <h3>Conclusiones</h3>
+      <ul class="insight-list">
+        {% for c in data.conclusions %}
+        <li class="insight-item insight-{{ c.type }}">
+          {% if c.type == 'danger' %}<i class="bi bi-exclamation-triangle-fill"></i>
+          {% elif c.type == 'warning' %}<i class="bi bi-exclamation-circle-fill"></i>
+          {% else %}<i class="bi bi-check-circle-fill"></i>{% endif %}
+          <span>{{ c.text }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div class="insight-card">
+      <h3>Recomendaciones</h3>
+      <ul class="insight-list">
+        {% for r in data.recommendations %}
+        <li class="insight-item insight-info">
+          <i class="bi bi-arrow-right-circle-fill"></i> <span>{{ r }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===================== TABLA DE ISSUES ===================== -->
+  <section class="issues-section">
+    <div class="issues-header">
+      <h3>Detalle de Issues <span class="issues-count-badge">{{ data.issues_total }}</span></h3>
+      <div class="issues-controls no-print">
+        <div class="search-input-wrap">
+          <img src="{{ url_for('public_file', filename='search.gif') }}" alt="" class="search-icon">
+          <input type="text" id="issueSearch" class="input-minimal" placeholder="Buscar...">
+        </div>
+        <select id="filterType" class="select-minimal">
+          <option value="">Todos los tipos</option>
+          <option value="BUG">Bug</option>
+          <option value="VULNERABILITY">Vulnerability</option>
+          <option value="CODE_SMELL">Code Smell</option>
+        </select>
+        <select id="filterSeverity" class="select-minimal">
+          <option value="">Todas las severidades</option>
+          <option value="BLOCKER">Blocker</option>
+          <option value="CRITICAL">Critical</option>
+          <option value="MAJOR">Major</option>
+          <option value="MINOR">Minor</option>
+          <option value="INFO">Info</option>
+        </select>
+        <button id="gridDensityToggle" type="button" class="btn-ghost" title="Cambiar densidad de la tabla">
+          <i class="bi bi-arrows-collapse"></i> <span id="gridDensityLabel">Compacta</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="issuesGrid" class="ag-theme-alpine issues-ag-grid"></div>
+  </section>
+
+</main>
+
+<!-- ===================== FOOTER ===================== -->
+<footer class="report-footer">
+  <div class="footer-grid">
+    <span><i class="bi bi-hdd-stack"></i> SonarQube v{{ data.server_version }}</span>
+    <span><i class="bi bi-clock-history"></i> Consultado el {{ data.generated_at.date }} {{ data.generated_at.time }}</span>
+    <span><i class="bi bi-folder2"></i> Proyecto: {{ data.project.name }}</span>
+    <span><i class="bi bi-list-check"></i> Total de issues: {{ data.issues_total }}</span>
+  </div>
+  <div class="footer-brand">
+    <span class="footer-brand-line"></span>
+    <span class="footer-brand-text">
+      Powered by <span class="footer-brand-name">Ludycom</span>
+    </span>
+    <span class="footer-brand-line"></span>
+  </div>
+</footer>
+
+<!-- ===================== MODAL DE DETALLE DE MÉTRICA =====================
+     Se abre al hacer click en una tarjeta de issues (Bugs, Vulnerabilidades,
+     Code Smells) y lista los issues de ese tipo. Se llena en el cliente
+     desde window.REPORT_DATA.issues (ver initMetricDetail en script.js),
+     así que no hace falta ninguna consulta extra al servidor. -->
+<div id="metricModal" class="metric-modal no-print" hidden>
+  <div class="metric-modal-backdrop" data-close-modal></div>
+  <div class="metric-modal-panel" role="dialog" aria-modal="true" aria-labelledby="metricModalTitle">
+    <header class="metric-modal-head">
+      <div class="metric-modal-head-text">
+        <h3 id="metricModalTitle">Detalle</h3>
+        <p id="metricModalSubtitle" class="metric-modal-subtitle"></p>
+      </div>
+      <button type="button" class="metric-modal-close" data-close-modal aria-label="Cerrar">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </header>
+
+    <div id="metricModalSeverities" class="metric-modal-severities"></div>
+
+    <div class="metric-modal-toolbar">
+      <div class="metric-modal-search">
+        <i class="bi bi-search"></i>
+        <input type="text" id="metricModalFilter" placeholder="Filtrar por archivo, regla o mensaje…" />
+      </div>
+      <span id="metricModalCount" class="metric-modal-count"></span>
+    </div>
+
+    <div class="metric-modal-body">
+      <table class="metric-modal-table">
+        <thead>
+          <tr>
+            <th>Severidad</th>
+            <th>Archivo</th>
+            <th>Línea</th>
+            <th>Regla</th>
+            <th>Mensaje</th>
+          </tr>
+        </thead>
+        <tbody id="metricModalRows"></tbody>
+      </table>
+      <p id="metricModalEmpty" class="metric-modal-empty" hidden>
+        <i class="bi bi-check-circle"></i> No hay issues que coincidan.
+      </p>
+
+      <!-- Indicador de carga del scroll infinito: aparece al llegar al final
+           mientras se pinta la siguiente tanda de issues. -->
+      <div id="metricModalLoader" class="metric-modal-loader" hidden>
+        <span class="metric-modal-spinner" aria-hidden="true"></span>
+        <span>Cargando más issues…</span>
+      </div>
+
+      <p id="metricModalEnd" class="metric-modal-end" hidden>
+        <i class="bi bi-check2-all"></i> Fin de la lista
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Objeto unificado devuelto por app.py en esta petición (datos en vivo)
+  window.REPORT_DATA = {{ data_json | safe }};
+  // Prefijo bajo el que está montada la app si corre detrás de un reverse
+  // proxy en un sub-path (ej. "/reports" en https://dominio.com/reports/).
+  // request.script_root ya viene resuelto por ProxyFix (ver app.py) a
+  // partir del header X-Forwarded-Prefix que manda nginx. script.js lo usa
+  // para construir URLs (ej. al cambiar de proyecto en el selector) sin
+  // perder el prefijo.
+  window.APP_PREFIX = {{ request.script_root | tojson }};
+</script>
+
+<script src="{{ url_for('static', filename='orb.js') }}" defer></script>
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+{% include "_tooltip.html" %}
+</body>
+</html>

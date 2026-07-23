@@ -1,0 +1,58 @@
+# =============================================================================
+# docker-compose.yml — Dashboard Ejecutivo SonarQube (Flask)
+# =============================================================================
+# Uso:
+#   1. cp .env.example .env   (si todavía no existe) y ajustá SONARQUBE_HOST,
+#      DEFAULT_PROJECT_KEY, etc. Para Docker conviene además fijar
+#      FLASK_SECRET_KEY en el .env (ver comentario más abajo).
+#   2. docker compose up -d --build
+#   3. Abrir http://localhost:${FLASK_PORT:-5000}
+#
+# No hace falta crear ni ajustar el dueño de logs/ e history/ a mano: el
+# contenedor arranca como root, entrypoint.sh les da permisos al usuario sin
+# privilegios que corre la app, y recién ahí baja privilegios (ver Dockerfile
+# y entrypoint.sh).
+#
+# Parar / eliminar:
+#   docker compose down
+# Ver logs en vivo:
+#   docker compose logs -f
+# =============================================================================
+
+services:
+  sonar-dashboard:
+    build: .
+    image: sonar-dashboard:latest
+    container_name: sonar-dashboard
+    restart: unless-stopped
+
+    # Carga TODAS las variables de .env dentro del contenedor (SONARQUBE_HOST,
+    # DEFAULT_PROJECT_KEY, FLASK_PORT, FLASK_SECRET_KEY, etc. — ver .env.example).
+    env_file:
+      - .env
+
+    # El puerto expuesto en el host sigue a FLASK_PORT del .env; si no está
+    # definido, usa 5000 tanto adentro como afuera del contenedor.
+    ports:
+      - "${FLASK_PORT:-5000}:${FLASK_PORT:-5000}"
+
+    volumes:
+      # Logs y snapshots históricos persisten en el host aunque se recree
+      # el contenedor (docker compose down / up, actualizaciones de imagen).
+      - ./logs:/app/logs
+      - ./history:/app/history
+
+    # Si tu SonarQube corre en el mismo Windows/Mac (fuera de Docker), poné
+    # SONARQUBE_HOST=http://host.docker.internal:9000 en el .env. En Linux,
+    # además hace falta descomentar esto para que ese nombre resuelva:
+    # extra_hosts:
+    #   - "host.docker.internal:host-gateway"
+
+# -----------------------------------------------------------------------------
+# Nota sobre FLASK_SECRET_KEY:
+# Sin volumen para /app/.flask_secret_key, cada vez que se reconstruye/recrea
+# el contenedor se pierde esa clave y todas las sesiones quedan invalidadas
+# (todo el mundo tiene que loguearse de nuevo). Para evitarlo, definí un valor
+# fijo en tu .env, por ejemplo generado con:
+#   python -c "import secrets; print(secrets.token_hex(32))"
+# -----------------------------------------------------------------------------

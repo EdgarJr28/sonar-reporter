@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<!--
+  templates/login.html
+  Pantalla de login: valida usuario/contraseña (o token personal) contra
+  la propia instancia de SonarQube (POST /login en app.py, que consulta
+  /api/authentication/validate). No hay una base de usuarios propia — cada
+  persona usa exactamente su cuenta de SonarQube.
+-->
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+{% include "_theme_init.html" %}
+<title>Iniciar sesión · SonarQube Dashboard</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="login-body">
+
+<div class="floating-controls no-print">
+  {% include "_theme_toggle.html" %}
+</div>
+
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-card-head">
+      <span class="login-icon"><i class="bi bi-shield-check"></i></span>
+      <h1>Iniciar sesión</h1>
+      <p class="login-subtitle"><i class="bi bi-hdd-network"></i> {{ host }}</p>
+    </div>
+
+    {% if error %}
+    <div class="login-error"><i class="bi bi-exclamation-triangle-fill"></i> {{ error }}</div>
+    {% endif %}
+
+    <div class="login-mode-switch" role="tablist" aria-label="Método de acceso" id="loginModeSwitch">
+      <button type="button" class="login-mode-btn" data-mode="credentials" role="tab" aria-selected="true">
+        <i class="bi bi-person-badge-fill"></i> Usuario y contraseña
+      </button>
+      <button type="button" class="login-mode-btn" data-mode="token" role="tab" aria-selected="false">
+        <i class="bi bi-key-fill"></i> Token de acceso
+      </button>
+      <span class="login-mode-thumb" aria-hidden="true"></span>
+    </div>
+
+    <form method="post" action="{{ url_for('login', next=request.args.get('next')) }}" class="login-form" id="loginForm">
+      <input type="hidden" name="login_mode" id="loginModeInput" value="{{ login_mode or 'credentials' }}" />
+
+      <label class="login-label" for="username" id="usernameLabel">Usuario</label>
+      <div class="login-input-wrap">
+        <i class="bi bi-person-fill login-input-icon" id="usernameIcon"></i>
+        <input
+          id="username" name="username" type="text" class="login-input"
+          placeholder="usuario de SonarQube" value="{{ username_value }}"
+          autocomplete="username" autofocus required
+        />
+      </div>
+
+      <div id="passwordGroup">
+        <label class="login-label" for="password">Contraseña</label>
+        <div class="login-input-wrap">
+          <i class="bi bi-lock-fill login-input-icon"></i>
+          <input
+            id="password" name="password" type="password" class="login-input login-input-has-action"
+            placeholder="Tu contraseña" autocomplete="current-password"
+          />
+          <button type="button" id="togglePassword" class="login-toggle-password" tabindex="-1" aria-label="Mostrar contraseña">
+            <i class="bi bi-eye"></i>
+          </button>
+        </div>
+      </div>
+
+      <p class="login-hint" id="loginHint">
+        <i class="bi bi-info-circle-fill"></i>
+        <span id="loginHintText">Usa el mismo usuario y contraseña con el que entras a SonarQube.</span>
+      </p>
+
+      <button type="submit" class="btn-solid login-submit">
+        <i class="bi bi-box-arrow-in-right"></i> Ingresar
+      </button>
+    </form>
+  </div>
+
+  <div class="login-security-note">
+    <i class="bi bi-shield-lock-fill"></i>
+    <span>Conexión cifrada · tus credenciales se validan directo con SonarQube y nunca se guardan en el navegador</span>
+  </div>
+
+  <p class="login-footer-note">Desarrollado por <strong>Ludycom</strong></p>
+</div>
+
+<script>
+  (function () {
+    var toggle = document.getElementById("togglePassword");
+    var password = document.getElementById("password");
+    if (!toggle || !password) return;
+    toggle.addEventListener("click", function () {
+      var showing = password.type === "text";
+      password.type = showing ? "password" : "text";
+      toggle.querySelector("i").className = showing ? "bi bi-eye" : "bi bi-eye-slash";
+      toggle.setAttribute("aria-label", showing ? "Mostrar contraseña" : "Ocultar contraseña");
+    });
+  })();
+</script>
+
+<script>
+  // Switch "Usuario y contraseña" / "Token de acceso": es puramente visual
+  // (el backend siempre recibe el mismo campo "username" — un token de
+  // SonarQube funciona ahí igual que un usuario, con la contraseña vacía).
+  // Acá solo cambiamos labels/placeholder y mostramos u ocultamos el campo
+  // de contraseña para que quede claro qué hay que llenar en cada modo.
+  (function () {
+    var switchEl = document.getElementById("loginModeSwitch");
+    var buttons = switchEl ? switchEl.querySelectorAll(".login-mode-btn") : [];
+    var modeInput = document.getElementById("loginModeInput");
+    var usernameInput = document.getElementById("username");
+    var usernameLabel = document.getElementById("usernameLabel");
+    var usernameIcon = document.getElementById("usernameIcon");
+    var passwordGroup = document.getElementById("passwordGroup");
+    var password = document.getElementById("password");
+    var hintText = document.getElementById("loginHintText");
+    if (!switchEl || !modeInput) return;
+
+    var COPY = {
+      credentials: {
+        label: "Usuario",
+        placeholder: "usuario de SonarQube",
+        icon: "bi bi-person-fill login-input-icon",
+        hint: "Usa el mismo usuario y contraseña con el que entras a SonarQube.",
+      },
+      token: {
+        label: "Token de acceso",
+        placeholder: "squ_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        icon: "bi bi-key-fill login-input-icon",
+        hint: "Genéralo en SonarQube: tu avatar → My Account → Security. No hace falta contraseña.",
+      },
+    };
+
+    function setMode(mode) {
+      var copy = COPY[mode] || COPY.credentials;
+      modeInput.value = mode;
+      switchEl.setAttribute("data-active", mode);
+      buttons.forEach(function (btn) {
+        var isActive = btn.getAttribute("data-mode") === mode;
+        btn.classList.toggle("is-active", isActive);
+        btn.setAttribute("aria-selected", String(isActive));
+      });
+      if (usernameLabel) usernameLabel.textContent = copy.label;
+      if (usernameInput) usernameInput.placeholder = copy.placeholder;
+      if (usernameIcon) usernameIcon.className = copy.icon;
+      if (hintText) hintText.textContent = copy.hint;
+      if (passwordGroup) passwordGroup.hidden = mode === "token";
+      if (password && mode === "token") password.value = "";
+    }
+
+    buttons.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        setMode(btn.getAttribute("data-mode"));
+        if (btn.getAttribute("data-mode") === "token" && usernameInput) usernameInput.focus();
+      });
+    });
+
+    setMode(modeInput.value === "token" ? "token" : "credentials");
+  })();
+</script>
+
+</body>
+</html>

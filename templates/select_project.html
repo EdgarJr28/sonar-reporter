@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<!--
+  templates/select_project.html
+  Selector de proyectos (ruta /select-project). Se muestra en vez de ir
+  directo al dashboard cuando no hay DEFAULT_PROJECT_KEY configurado, o
+  cuando ese proyecto no existe en esta instancia de SonarQube (ver index()
+  en app.py) — así se evita el 502/404 de intentar cargar un proyecto que no
+  está, y en cambio se deja elegir entre los que la cuenta logueada sí puede ver.
+-->
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+{% include "_theme_init.html" %}
+<title>Elegir proyecto · SonarQube</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="floating-controls no-print">
+  {% include "_theme_toggle.html" %}
+</div>
+
+<header class="report-header">
+  <div class="header-inner">
+    <div class="header-top">
+      <div class="header-brand">
+        <div class="logo-dot"><i class="bi bi-grid-fill"></i></div>
+        <div>
+          <h1 class="project-title">Selecciona un proyecto</h1>
+          <p class="project-key">{{ all_projects|length }} proyecto{{ "s" if all_projects|length != 1 else "" }} disponible{{ "s" if all_projects|length != 1 else "" }} en SonarQube</p>
+        </div>
+      </div>
+      <div class="header-controls">
+        {% include "_user_menu.html" %}
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="main-content">
+
+  {% if default_project_key and all_projects %}
+  <section class="insight-card" style="margin-bottom: 20px; border-color: rgba(255,149,0,0.35);">
+    <p style="margin:0; color: var(--orange);">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      El proyecto por defecto configurado (<code>{{ default_project_key }}</code>) no existe en esta
+      instancia de SonarQube (o tu cuenta no tiene permiso sobre él). Selecciona uno de los de abajo, o
+      actualizá <code>DEFAULT_PROJECT_KEY</code> en el <code>.env</code> del servidor.
+    </p>
+  </section>
+  {% endif %}
+
+  {% if all_projects %}
+  <section class="insight-card">
+    <h3>Proyectos</h3>
+    <div class="project-picker-grid">
+      {% for p in all_projects %}
+      <a class="project-picker-card" href="{{ url_for('project_dashboard', project_key=p.key) }}">
+        <span class="project-picker-icon"><i class="bi bi-folder2-open"></i></span>
+        <span class="project-picker-body">
+          <span class="project-picker-name">{{ p.name }}</span>
+          <span class="project-picker-meta">{{ p.key }}</span>
+        </span>
+        <i class="bi bi-chevron-right project-picker-arrow"></i>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% else %}
+  <section class="insight-card">
+    <p style="margin:0; color: var(--text-muted);">
+      <i class="bi bi-inbox"></i>
+      Tu cuenta de SonarQube no ve ningún proyecto en esta instancia (o todavía no hay proyectos
+      analizados). Verificá tus permisos en SonarQube.
+    </p>
+  </section>
+  {% endif %}
+
+</main>
+
+<footer class="report-footer">
+  <div class="footer-brand">
+    <span class="footer-brand-line"></span>
+    <span class="footer-brand-text">Powered by <span class="footer-brand-name">Ludycom</span></span>
+    <span class="footer-brand-line"></span>
+  </div>
+</footer>
+
+{% include "_tooltip.html" %}
+</body>
+</html>

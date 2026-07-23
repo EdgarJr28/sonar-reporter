@@ -1,0 +1,44 @@
+<!--
+  templates/_theme_toggle.html
+  Botón flotante para alternar modo oscuro/claro. Partial compartido por
+  todas las páginas (antes vivía solo en dashboard.html e initDarkMode() en
+  script.js, así que en el resto de la app no había forma de cambiarlo).
+  Guarda la preferencia en localStorage ("sonar-report-theme") y la aplica
+  vía el atributo data-theme en <html> (ver static/style.css). Es
+  self-contained: no depende de que la página cargue static/script.js.
+  Dispara un evento "sonarthemechange" en window para que páginas con
+  gráficos (dashboard.html) puedan re-renderizarlos con los colores nuevos.
+  Nota: NO incluye el wrapper .floating-controls -> cada página lo pone
+  alrededor (así puede convivir con otros fabs, p. ej. "Volver arriba").
+-->
+<button id="darkModeToggle" class="fab" title="Cambiar tema" type="button">
+  <i class="bi bi-moon-stars-fill"></i>
+</button>
+<script>
+  (function () {
+    var toggle = document.getElementById("darkModeToggle");
+    var root = document.documentElement;
+    if (!toggle) return;
+
+    function setIcon(isDark) {
+      toggle.innerHTML = isDark
+        ? '<i class="bi bi-sun-fill"></i>'
+        : '<i class="bi bi-moon-stars-fill"></i>';
+    }
+
+    setIcon(root.getAttribute("data-theme") === "dark");
+
+    toggle.addEventListener("click", function () {
+      var isDark = root.getAttribute("data-theme") === "dark";
+      if (isDark) {
+        root.removeAttribute("data-theme");
+        try { localStorage.setItem("sonar-report-theme", "light"); } catch (e) {}
+      } else {
+        root.setAttribute("data-theme", "dark");
+        try { localStorage.setItem("sonar-report-theme", "dark"); } catch (e) {}
+      }
+      setIcon(!isDark);
+      window.dispatchEvent(new CustomEvent("sonarthemechange", { detail: { dark: !isDark } }));
+    });
+  })();
+</script>

@@ -1,0 +1,64 @@
+<!--
+  templates/_user_menu.html
+  Botón de perfil (usuario logueado con SonarQube) + menú desplegable con
+  "Cerrar sesión". Partial compartido por dashboard.html, select_project.html
+  y compare.html para que el nav se vea y se comporte igual en toda la app —
+  se incluye con la etiqueta Jinja "include" donde haga falta.
+  Incluye su propio <script> de toggle (self-contained) para no depender de
+  que la página que lo use cargue static/script.js.
+-->
+{% if current_username %}
+<div class="user-menu no-print">
+  <button
+    id="userMenuBtn"
+    type="button"
+    class="user-menu-trigger"
+    aria-haspopup="true"
+    aria-expanded="false"
+    title="Cuenta de SonarQube"
+  >
+    <span class="user-avatar">{{ current_username[0]|upper }}</span>
+    <span class="user-menu-name">{{ current_username }}</span>
+    <i class="bi bi-chevron-down user-menu-caret"></i>
+  </button>
+  <div id="userMenuPanel" class="user-menu-panel" hidden role="menu">
+    <div class="user-menu-header">
+      <span class="user-avatar user-avatar-lg">{{ current_username[0]|upper }}</span>
+      <div class="user-menu-header-text">
+        <span class="user-menu-fullname">{{ current_username }}</span>
+        <span class="user-menu-host"><i class="bi bi-plug-fill"></i> Conectado a SonarQube</span>
+      </div>
+    </div>
+    <a href="{{ url_for('logout') }}" class="user-menu-logout" role="menuitem">
+      <i class="bi bi-box-arrow-right"></i>
+      <span>Cerrar sesión</span>
+    </a>
+  </div>
+</div>
+<script>
+  (function () {
+    var trigger = document.getElementById("userMenuBtn");
+    var panel = document.getElementById("userMenuPanel");
+    if (!trigger || !panel) return;
+
+    function closeMenu() {
+      panel.hidden = true;
+      trigger.setAttribute("aria-expanded", "false");
+    }
+
+    trigger.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var isOpen = !panel.hidden;
+      panel.hidden = isOpen;
+      trigger.setAttribute("aria-expanded", String(!isOpen));
+    });
+
+    document.addEventListener("click", function (e) {
+      if (!panel.hidden && !panel.contains(e.target) && e.target !== trigger) closeMenu();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeMenu();
+    });
+  })();
+</script>
+{% endif %}

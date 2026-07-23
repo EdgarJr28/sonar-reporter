@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+{% include "_theme_init.html" %}
+<title>Error · Reporte SonarQube</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body style="display:flex;align-items:center;justify-content:center;min-height:100vh;">
+  <div class="floating-controls no-print">
+    {% include "_theme_toggle.html" %}
+  </div>
+  <div class="insight-card" style="max-width:520px;text-align:center;">
+    <h3><i class="bi bi-exclamation-triangle-fill"></i> No se pudo cargar el reporte</h3>
+    <p class="error-message" style="color:var(--text-muted);">{{ message }}</p>
+    <p style="color:var(--text-muted);font-size:0.85rem;">
+      Verifica que SonarQube esté corriendo, que HOST/TOKEN sean correctos en <code>app.py</code>,
+      y que la clave del proyecto exista.
+    </p>
+  </div>
+</body>
+</html>

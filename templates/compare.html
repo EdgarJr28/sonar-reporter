@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<!--
+  templates/compare.html
+  Comparación lado a lado de varios proyectos (métricas clave, ratings,
+  health score y Quality Gate). Reutiliza static/style.css para mantener
+  el mismo look & feel del dashboard, pero es una vista independiente.
+-->
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+{% include "_theme_init.html" %}
+<title>Comparar proyectos · SonarQube</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="floating-controls no-print">
+  {% include "_theme_toggle.html" %}
+</div>
+
+<header class="report-header">
+  <div class="header-inner">
+    <div class="header-top">
+      <div class="header-brand">
+        <div class="logo-dot"><i class="bi bi-bar-chart-line-fill"></i></div>
+        <div>
+          <h1 class="project-title">Comparar proyectos</h1>
+          <p class="project-key">Métricas clave lado a lado</p>
+        </div>
+      </div>
+      <div class="header-controls">
+        <a class="btn-ghost" href="{{ url_for('index') }}"><i class="bi bi-arrow-left"></i> Volver al dashboard</a>
+        {% include "_user_menu.html" %}
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="main-content">
+
+  <!-- ===================== SELECTOR DE PROYECTOS ===================== -->
+  <section class="insight-card" style="margin-bottom: 20px;">
+    <h3>Selecciona los proyectos a comparar</h3>
+    <form method="get" action="{{ url_for('compare_projects') }}" class="compare-picker-form">
+      <div class="compare-checkbox-grid">
+        {% for p in all_projects %}
+        <label class="compare-checkbox">
+          <input type="checkbox" name="keys" value="{{ p.key }}" {% if p.key in selected_keys %}checked{% endif %}>
+          <span>{{ p.name }}</span>
+        </label>
+        {% endfor %}
+      </div>
+      <button type="submit" class="btn-solid" style="margin-top: 16px;">
+        <i class="bi bi-bar-chart-line"></i> Comparar seleccionados
+      </button>
+    </form>
+  </section>
+
+  {% if failed_keys %}
+  <section class="insight-card" style="margin-bottom: 20px; border-color: rgba(255,59,48,0.3);">
+    <p style="margin:0; color: var(--red);">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      No se pudieron cargar estos proyectos: {{ failed_keys|join(", ") }}
+    </p>
+  </section>
+  {% endif %}
+
+  {% if projects_data %}
+  <!-- ===================== TABLA COMPARATIVA ===================== -->
+  <section class="issues-section">
+    <div class="issues-header">
+      <h3>Comparación <span class="issues-count-badge">{{ projects_data|length }} proyectos</span></h3>
+    </div>
+
+    <div class="table-responsive">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Métrica</th>
+            {% for p in projects_data %}
+            <th>
+              <a href="{{ url_for('project_dashboard', project_key=p.project.key) }}">{{ p.project.name }}</a>
+            </th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Health score</td>
+            {% for p in projects_data %}
+            <td><span class="rating-circle {{ p.health.css }}" style="width:34px;height:34px;font-size:0.85rem;display:inline-flex;">{{ p.health.letter }}</span> {{ p.health.score }}</td>
+            {% endfor %}
+          </tr>
+          <tr>
+            <td>Quality Gate</td>
+            {% for p in projects_data %}
+            <td>
+              {% if p.quality_gate.status == 'OK' %}
+                <span class="qg-pill qg-ok"><i class="bi bi-check-circle-fill"></i> Passed</span>
+              {% elif p.quality_gate.status == 'ERROR' %}
+                <span class="qg-pill qg-error"><i class="bi bi-x-circle-fill"></i> Failed</span>
+              {% else %}
+                <span class="qg-pill qg-none">{{ p.quality_gate.status }}</span>
+              {% endif %}
+            </td>
+            {% endfor %}
+          </tr>
+          <tr>
+            <td>Bugs</td>
+            {% for p in projects_data %}<td>{{ p.measures.bugs }}</td>{% endfor %}
+          </tr>
+          <tr>
+            <td>Vulnerabilidades</td>
+            {% for p in projects_data %}<td>{{ p.measures.vulnerabilities }}</td>{% endfor %}
+          </tr>
+          <tr>
+            <td>Code Smells</td>
+            {% for p in projects_data %}<td>{{ p.measures.code_smells }}</td>{% endfor %}
+          </tr>
+          <tr>
+            <td>Cobertura</td>
+            {% for p in projects_data %}<td>{{ "%.1f"|format(p.measures.coverage) }}%</td>{% endfor %}
+          </tr>
+          <tr>
+            <td>Duplicación</td>
+            {% for p in projects_data %}<td>{{ "%.1f"|format(p.measures.duplication) }}%</td>{% endfor %}
+          </tr>
+          <tr>
+            <td>Líneas de código</td>
+            {% for p in projects_data %}<td>{{ "{:,}".format(p.measures.ncloc) }}</td>{% endfor %}
+          </tr>
+          <tr>
+            <td>Reliability</td>
+            {% for p in projects_data %}<td><span class="rating-circle {{ p.ratings_css.reliability }}" style="width:30px;height:30px;font-size:0.8rem;display:inline-flex;">{{ p.measures.reliability_rating }}</span></td>{% endfor %}
+          </tr>
+          <tr>
+            <td>Security</td>
+            {% for p in projects_data %}<td><span class="rating-circle {{ p.ratings_css.security }}" style="width:30px;height:30px;font-size:0.8rem;display:inline-flex;">{{ p.measures.security_rating }}</span></td>{% endfor %}
+          </tr>
+          <tr>
+            <td>Maintainability</td>
+            {% for p in projects_data %}<td><span class="rating-circle {{ p.ratings_css.maintainability }}" style="width:30px;height:30px;font-size:0.8rem;display:inline-flex;">{{ p.measures.maintainability_rating }}</span></td>{% endfor %}
+          </tr>
+          <tr>
+            <td>Total de issues</td>
+            {% for p in projects_data %}<td>{{ p.issues_total }}</td>{% endfor %}
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
+
+</main>
+
+<footer class="report-footer">
+  <div class="footer-brand">
+    <span class="footer-brand-line"></span>
+    <span class="footer-brand-text">Powered by <span class="footer-brand-name">Ludycom</span></span>
+    <span class="footer-brand-line"></span>
+  </div>
+</footer>
+
+{% include "_tooltip.html" %}
+</body>
+</html>

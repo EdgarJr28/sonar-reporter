@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<!--
+  templates/pdf_report.html
+  Plantilla EXCLUSIVA para el PDF formal (renderizada por WeasyPrint desde
+  la ruta /project/<key>/pdf en app.py). No es la misma vista que el
+  dashboard interactivo: aquí se maqueta pensando en papel — portada,
+  resumen ejecutivo, gráficos como imágenes estáticas (matplotlib) y
+  encabezado/pie con numeración de página real.
+-->
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Reporte de Calidad — {{ data.project.name }}</title>
+<!-- CSS embebido inline (no como <link>): WeasyPrint corre en el mismo
+     proceso que Flask y una petición HTTP de vuelta al propio servidor
+     de desarrollo (de un solo hilo) se quedaría esperando indefinidamente. -->
+<style>{{ pdf_css|safe }}</style>
+</head>
+<body>
+
+  <!-- ===================== PORTADA ===================== -->
+  <section class="cover-page">
+    <div class="cover-top">
+      <div class="cover-brand">
+        <div class="cover-logo">SQ</div>
+        <span class="cover-brand-name">SonarQube · Reporte de Calidad de Código</span>
+      </div>
+      <span class="cover-date">{{ data.generated_at.date }}</span>
+    </div>
+
+    <div class="cover-middle">
+      <p class="cover-eyebrow">Informe ejecutivo</p>
+      <h1 class="cover-project-title">{{ data.project.name }}</h1>
+      <p class="cover-project-key">Clave de proyecto: {{ data.project.key }}</p>
+
+      <div class="cover-qg qg-{{ data.quality_gate.status|lower }}">
+        Quality Gate:
+        {% if data.quality_gate.status == 'OK' %}Aprobado
+        {% elif data.quality_gate.status == 'ERROR' %}No superado
+        {% else %}{{ data.quality_gate.status }}{% endif %}
+      </div>
+
+      <div class="cover-health">
+        <span class="cover-health-score">{{ data.health.score }}</span>
+        <span class="cover-health-text">
+          <strong>{{ data.health.label }}</strong><br>Puntaje de salud del proyecto ({{ data.health.letter }})
+        </span>
+      </div>
+    </div>
+
+    <table class="cover-summary-table">
+      <tr>
+        <td>
+          <span class="cover-summary-value">{{ data.measures.bugs }}</span>
+          <span class="cover-summary-label">Bugs</span>
+        </td>
+        <td>
+          <span class="cover-summary-value">{{ data.measures.vulnerabilities }}</span>
+          <span class="cover-summary-label">Vulnerabilidades</span>
+        </td>
+        <td>
+          <span class="cover-summary-value">{{ data.measures.code_smells }}</span>
+          <span class="cover-summary-label">Code Smells</span>
+        </td>
+        <td>
+          <span class="cover-summary-value">{{ "%.1f"|format(data.measures.coverage) }}%</span>
+          <span class="cover-summary-label">Cobertura</span>
+        </td>
+        <td>
+          <span class="cover-summary-value">{{ data.issues_total }}</span>
+          <span class="cover-summary-label">Issues totales</span>
+        </td>
+      </tr>
+    </table>
+
+    <div class="cover-footer">
+      <p>Generado automáticamente a partir de la API REST de SonarQube v{{ data.server_version }}.</p>
+      <p>Fecha y hora de la consulta: {{ data.generated_at.date }} {{ data.generated_at.time }}</p>
+      <p class="cover-confidential">Uso interno — distribución restringida al equipo de desarrollo y calidad.</p>
+    </div>
+  </section>
+
+  <!-- Ancla invisible: fija el texto que aparece en el encabezado de cada
+       página del cuerpo del reporte (CSS string-set / string()). -->
+  <h1 class="running-anchor">{{ data.project.name }}</h1>
+
+  <!-- ===================== RESUMEN EJECUTIVO ===================== -->
+  <section class="pdf-section">
+    <h2 class="section-title">1. Resumen ejecutivo</h2>
+    <p class="section-intro">
+      Este informe resume el estado de calidad del proyecto <strong>{{ data.project.name }}</strong>
+      según el último análisis disponible en SonarQube, incluyendo métricas de fiabilidad, seguridad,
+      mantenibilidad, cobertura de pruebas y duplicación de código, junto con las conclusiones y
+      recomendaciones derivadas de dichos resultados.
+    </p>
+
+    <table class="formal-table">
+      <thead>
+        <tr>
+          <th>Métrica</th>
+          <th>Valor</th>
+          <th>Evaluación</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Bugs</td>
+          <td>{{ data.measures.bugs }}</td>
+          <td>{{ "Crítico" if data.measures.bugs > 500 else ("Atención" if data.measures.bugs > 0 else "Correcto") }}</td>
+        </tr>
+        <tr>
+          <td>Vulnerabilidades</td>
+          <td>{{ data.measures.vulnerabilities }}</td>
+          <td>{{ "Atención" if data.measures.vulnerabilities > 0 else "Correcto" }}</td>
+        </tr>
+        <tr>
+          <td>Code Smells</td>
+          <td>{{ data.measures.code_smells }}</td>
+          <td>{{ "Atención" if data.measures.code_smells > 100 else "Correcto" }}</td>
+        </tr>
+        <tr>
+          <td>Cobertura de pruebas</td>
+          <td>{{ "%.1f"|format(data.measures.coverage) }}%</td>
+          <td>{{ "Atención" if data.measures.coverage < 50 else "Correcto" }}</td>
+        </tr>
+        <tr>
+          <td>Duplicación de código</td>
+          <td>{{ "%.1f"|format(data.measures.duplication) }}%</td>
+          <td>{{ "Atención" if data.measures.duplication > 10 else "Correcto" }}</td>
+        </tr>
+        <tr>
+          <td>Líneas de código (ncloc)</td>
+          <td>{{ "{:,}".format(data.measures.ncloc) }}</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>Rating de fiabilidad</td>
+          <td>{{ data.measures.reliability_rating }}</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>Rating de seguridad</td>
+          <td>{{ data.measures.security_rating }}</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>Rating de mantenibilidad</td>
+          <td>{{ data.measures.maintainability_rating }}</td>
+          <td>—</td>
+        </tr>
+      </tbody>
+    </table>
+
+    {% if data.quality_gate.conditions %}
+    <h3 class="subsection-title">Condiciones del Quality Gate</h3>
+    <table class="formal-table compact">
+      <thead>
+        <tr>
+          <th>Métrica</th>
+          <th>Operador</th>
+          <th>Umbral</th>
+          <th>Valor actual</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in data.quality_gate.conditions %}
+        <tr>
+          <td>{{ c.metricKey }}</td>
+          <td>{{ c.comparator }}</td>
+          <td>{{ c.errorThreshold }}</td>
+          <td>{{ c.actualValue }}</td>
+          <td>{{ "Aprobado" if c.status == "OK" else "No superado" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </section>
+
+  <!-- ===================== GRÁFICOS ===================== -->
+  <section class="pdf-section page-break-before">
+    <h2 class="section-title">2. Análisis gráfico</h2>
+
+    <div class="chart-row">
+      <div class="chart-box wide">
+        <img src="{{ charts.bar_comparison }}" alt="Bugs, Code Smells y Vulnerabilidades">
+      </div>
+    </div>
+
+    <div class="chart-row">
+      <div class="chart-box">
+        <img src="{{ charts.doughnut_coverage }}" alt="Cobertura y duplicación">
+      </div>
+      <div class="chart-box">
+        <img src="{{ charts.pie_severity }}" alt="Distribución por severidad">
+      </div>
+    </div>
+
+    <div class="chart-row">
+      <div class="chart-box">
+        <img src="{{ charts.top_files }}" alt="Top 10 archivos con más issues">
+      </div>
+      <div class="chart-box">
+        <img src="{{ charts.top_rules }}" alt="Top 10 reglas incumplidas">
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== CONCLUSIONES Y RECOMENDACIONES ===================== -->
+  <section class="pdf-section page-break-before">
+    <h2 class="section-title">3. Conclusiones</h2>
+    <ol class="formal-list">
+      {% for c in data.conclusions %}
+      <li class="conclusion-{{ c.type }}">{{ c.text }}</li>
+      {% endfor %}
+    </ol>
+
+    <h2 class="section-title">4. Recomendaciones</h2>
+    <ol class="formal-list">
+      {% for r in data.recommendations %}
+      <li>{{ r }}</li>
+      {% endfor %}
+    </ol>
+  </section>
+
+  <!-- ===================== DETALLE DE ISSUES ===================== -->
+  {% if pdf_detail == "full" %}
+  <section class="pdf-section page-break-before">
+    <h2 class="section-title">5. Detalle de issues ({{ data.issues_total }})</h2>
+    {% if pdf_issues_truncated %}
+    <p class="section-intro">
+      El proyecto tiene <strong>{{ data.issues_total }}</strong> issues en total. Por razones de
+      espacio y tiempo de generación, este PDF detalla únicamente los <strong>{{ pdf_issues|length }}
+      más severos</strong> (ordenados de mayor a menor severidad). Para el listado completo, filtrable
+      y ordenable, consulta el dashboard interactivo en
+      <code>{{ url_for('project_dashboard', project_key=data.project.key, _external=True) }}</code>.
+    </p>
+    {% else %}
+    <p class="section-intro">
+      Listado completo de issues detectados en el análisis. Los mensajes largos se muestran
+      truncados por razones de espacio.
+    </p>
+    {% endif %}
+
+    {% set type_glyphs = {"BUG": "●", "VULNERABILITY": "▲", "CODE_SMELL": "■"} %}
+    {% set severity_glyphs = {"BLOCKER": "◆", "CRITICAL": "▲", "MAJOR": "●", "MINOR": "▬", "INFO": "○"} %}
+    <table class="formal-table issues-pdf-table">
+      <thead>
+        <tr>
+          <th>Tipo</th>
+          <th>Severidad</th>
+          <th>Archivo</th>
+          <th>Línea</th>
+          <th>Regla</th>
+          <th>Mensaje</th>
+          <th>Autor</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for issue in pdf_issues %}
+        <tr>
+          <td><span class="pill pill-type-{{ issue.type }}">{{ type_glyphs.get(issue.type, "") }} {{ issue.type }}</span></td>
+          <td><span class="pill pill-sev-{{ issue.severity }}">{{ severity_glyphs.get(issue.severity, "") }} {{ issue.severity }}</span></td>
+          <td class="col-file">{{ issue.file }}</td>
+          <td>{{ issue.line }}</td>
+          <td class="col-rule">{{ issue.rule }}</td>
+          <td class="col-message">{{ issue.message[:140] }}{{ "…" if issue.message|length > 140 else "" }}</td>
+          <td>{{ issue.author }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  {% endif %}
+
+</body>
+</html>

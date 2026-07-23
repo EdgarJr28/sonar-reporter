@@ -1,0 +1,13 @@
+<!--
+  templates/_tooltip.html
+  Carga el componente de tooltips (static/tooltip.js), que muestra el texto
+  completo de los elementos que aparecen recortados en pantalla (nombres de
+  archivo, mensajes de issues, celdas de tablas, etc.).
+
+  Va como partial y no dentro de static/script.js porque script.js solo lo
+  carga dashboard.html, y los tooltips hacen falta también en
+  select_project.html y compare.html.
+
+  Se incluye al final del <body> para no bloquear el render.
+-->
+<script src="{{ url_for('static', filename='tooltip.js') }}" defer></script>

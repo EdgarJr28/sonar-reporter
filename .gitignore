@@ -1,0 +1,39 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.Python
+.pytest_cache/
+.coverage
+htmlcov/
+
+# --- Entornos virtuales ---
+.venv/
+venv/
+env/
+ENV/
+
+# --- Configuración y secretos de esta app (ver .env.example) ---
+.env
+.env.*.local
+.flask_secret_key
+
+# --- Datos generados en tiempo de ejecución ---
+logs/
+history/
+data.json
+report.html
+
+# --- Editores / IDEs ---
+.vscode/
+.idea/
+*.swp
+
+# --- Archivos del sistema operativo ---
+.DS_Store
+Thumbs.db
+
+# --- Basura / archivos de prueba sueltos ---
+_disktest.txt

@@ -1,0 +1,2279 @@
+/* =============================================================
+   static/style.css — Reporte SonarQube · UI minimalista estilo Apple
+   Servido por Flask (app.py). Paleta y comportamiento inspirados en
+   Apple HIG (San Francisco, colores semánticos del sistema, superficies
+   con hairline borders y sombras muy sutiles). Tema claro por defecto,
+   con soporte de modo oscuro vía [data-theme="dark"] en <html>.
+   ============================================================= */
+
+:root {
+  /* Colores semánticos de sistema (Apple HIG) */
+  --blue: #0071e3;
+  --green: #34c759;
+  --orange: #ff9500;
+  --red: #ff3b30;
+  --yellow: #ffcc00;
+  --purple: #af52de;
+  --gray: #8e8e93;
+
+  --bg-body: #f5f5f7;
+  --bg-card: #ffffff;
+  --bg-header: rgba(255, 255, 255, 0.8);
+  --text-main: #1d1d1f;
+  --text-muted: #6e6e73;
+  --hairline: rgba(0, 0, 0, 0.08);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 12px rgba(0, 0, 0, 0.03);
+  --shadow-card-hover: 0 4px 24px rgba(0, 0, 0, 0.08);
+  --radius-lg: 20px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+
+  --color-bug: var(--red);
+  --color-vulnerability: var(--orange);
+  --color-codesmell: var(--yellow);
+
+  --color-blocker: #8b1a1a;
+  --color-critical: var(--red);
+  --color-major: var(--orange);
+  --color-minor: var(--yellow);
+  --color-info: var(--blue);
+}
+
+[data-theme="dark"] {
+  --bg-body: #000000;
+  --bg-card: #1c1c1e;
+  --bg-header: rgba(28, 28, 30, 0.72);
+  --text-main: #f5f5f7;
+  --text-muted: #98989d;
+  --hairline: rgba(255, 255, 255, 0.1);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-card-hover: 0 8px 30px rgba(0, 0, 0, 0.6);
+}
+
+* { box-sizing: border-box; }
+
+html { height: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI",
+    Helvetica Neue, Arial, sans-serif;
+  background: var(--bg-body);
+  color: var(--text-main);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.3s ease, color 0.3s ease;
+  animation: fadeIn 0.4s ease;
+  letter-spacing: -0.01em;
+  /* "Sticky footer": en páginas con poco contenido (ej. /select-project
+     con pocos proyectos, o /compare sin selección todavía), esto empuja
+     .report-footer hasta el fondo real de la ventana en vez de dejarlo
+     flotando justo debajo del contenido. No afecta a login.html/error.html
+     porque esas páginas fijan su propio display/min-height en el <body>
+     (con mayor especificidad) y no usan .main-content/.report-footer. */
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+h1, h2, h3, h4 { font-weight: 600; letter-spacing: -0.02em; }
+
+/* ---------------- Botones flotantes ---------------- */
+.floating-controls {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1000;
+}
+
+.fab {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--hairline);
+  background: var(--bg-card);
+  color: var(--text-main);
+  font-size: 1rem;
+  box-shadow: var(--shadow-card-hover);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, background 0.15s ease;
+  backdrop-filter: blur(20px);
+}
+.fab:hover { transform: scale(1.06); }
+
+/* ---------------- Toasts ---------------- */
+.toast-container {
+  position: fixed;
+  left: 24px;
+  bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 1100;
+}
+.toast {
+  background: var(--text-main);
+  color: var(--bg-body);
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 500;
+  box-shadow: var(--shadow-card-hover);
+  animation: toastIn 0.2s ease;
+  max-width: 320px;
+}
+
+/* ---------------- Header ---------------- */
+.report-header {
+  position: sticky;
+  top: 0;
+  z-index: 900;
+  background: var(--bg-header);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.header-inner {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 16px 28px;
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.header-brand { display: flex; align-items: center; gap: 14px; }
+
+.logo-dot {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.project-title { margin: 0; font-size: 1.3rem; color: var(--text-main); }
+.project-key { margin: 0; color: var(--text-muted); font-size: 0.8rem; }
+
+.header-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.project-select {
+  appearance: none;
+  background: var(--bg-card);
+  border: 1px solid var(--hairline);
+  color: var(--text-main);
+  padding: 7px 32px 7px 14px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  max-width: 220px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%236e6e73'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+}
+
+.qg-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.qg-ok { background: rgba(52, 199, 89, 0.14); color: #248a3d; }
+[data-theme="dark"] .qg-ok { color: #30d158; }
+.qg-error { background: rgba(255, 59, 48, 0.14); color: #c62828; }
+[data-theme="dark"] .qg-error { color: #ff453a; }
+.qg-none { background: rgba(142, 142, 147, 0.16); color: var(--text-muted); }
+
+.header-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.header-meta {
+  display: flex;
+  gap: 18px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+.header-meta span { display: inline-flex; align-items: center; gap: 6px; }
+
+.header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.btn-ghost, .btn-solid {
+  border: none;
+  border-radius: 999px;
+  padding: 7px 16px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+  text-decoration: none;
+}
+.btn-ghost {
+  background: rgba(142, 142, 147, 0.12);
+  color: var(--text-main);
+}
+.btn-ghost:hover { background: rgba(142, 142, 147, 0.2); }
+.btn-solid {
+  background: var(--blue);
+  color: #fff;
+}
+.btn-solid:hover { background: #0077ed; }
+.btn-ghost:active, .btn-solid:active { transform: scale(0.97); }
+
+/* ---------------- Exportar PDF: botón + selector de nivel de detalle ---------------- */
+.pdf-export-group {
+  position: relative;
+  display: inline-flex;
+}
+.pdf-export-main {
+  border-radius: 999px 0 0 999px;
+  padding-right: 12px;
+}
+.pdf-export-caret {
+  border-radius: 0 999px 999px 0;
+  padding: 7px 10px;
+  border-left: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.pdf-detail-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 260px;
+  background: var(--bg-card);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card-hover);
+  padding: 6px;
+  z-index: 2000;
+}
+.pdf-detail-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.82rem;
+  color: var(--text-main);
+}
+.pdf-detail-option:hover { background: rgba(0, 113, 227, 0.08); }
+.pdf-detail-option i:first-child { color: var(--text-muted); font-size: 1rem; flex-shrink: 0; }
+.pdf-detail-option span { flex: 1; display: flex; flex-direction: column; }
+.pdf-detail-option small { color: var(--text-muted); font-size: 0.72rem; font-weight: 400; }
+.pdf-detail-option .option-check { opacity: 0; color: var(--blue); }
+.pdf-detail-option.selected .option-check { opacity: 1; }
+.pdf-detail-option.selected { background: rgba(0, 113, 227, 0.08); font-weight: 600; }
+
+/* ---------------- Layout general ---------------- */
+.main-content {
+  padding: 32px 28px 64px;
+  max-width: 1440px;
+  margin: 0 auto;
+  width: 100%;
+  flex: 1 0 auto;
+}
+
+section { margin-bottom: 28px; }
+
+/* ---------------- Tarjetas resumen ---------------- */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+}
+
+.metric-card {
+  background: var(--bg-card);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  animation: slideUp 0.4s ease both;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: grab;
+  /* Sin esto, el tooltip de una tarjeta de la fila de abajo (que se abre
+     hacia arriba, ver .info-tip::after) puede quedar tapado por la
+     tarjeta de la fila de arriba: en un grid, las tarjetas se pintan en
+     orden de aparición y ninguna tenía z-index propio, así que "ganaba"
+     la que estuviera después en el HTML, no la que tuviera el tooltip
+     abierto. Al pasar el mouse/foco por el ícono de info (que está dentro
+     de la tarjeta, así que también dispara :hover acá), la subimos por
+     encima de las demás. */
+  position: relative;
+  z-index: 1;
+}
+.metric-card:hover,
+.metric-card:focus-within {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+  z-index: 5;
+}
+.metric-card:active { cursor: grabbing; }
+
+.metric-icon {
+  font-size: 1.3rem;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(142, 142, 147, 0.1);
+  color: var(--gray);
+  flex-shrink: 0;
+}
+.card-critical .metric-icon { background: rgba(255, 59, 48, 0.12); color: var(--red); }
+.card-warning .metric-icon { background: rgba(255, 149, 0, 0.12); color: var(--orange); }
+.card-ok .metric-icon { background: rgba(52, 199, 89, 0.12); color: var(--green); }
+.card-neutral .metric-icon { background: rgba(0, 113, 227, 0.12); color: var(--blue); }
+
+.metric-value { font-size: 1.5rem; font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; }
+.metric-label {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ---------------- Tooltips informativos (ícono de info en tarjetas) ---------------- */
+.info-tip {
+  color: var(--text-muted);
+  opacity: 0.6;
+  font-size: 0.78rem;
+  cursor: help;
+  position: relative;
+  outline: none;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+.info-tip:hover, .info-tip:focus-visible { opacity: 1; color: var(--blue); }
+
+.info-tip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  width: 220px;
+  max-width: 60vw;
+  background: var(--text-main);
+  color: var(--bg-body);
+  font-weight: 400;
+  font-size: 0.74rem;
+  line-height: 1.4;
+  text-align: left;
+  padding: 9px 11px;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-card-hover);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease;
+  z-index: 50;
+}
+[data-theme="dark"] .info-tip::after { color: var(--bg-body); }
+.info-tip:hover::after, .info-tip:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+.progress-bar-track {
+  margin-top: 8px;
+  height: 4px;
+  border-radius: 4px;
+  background: rgba(142, 142, 147, 0.18);
+  overflow: hidden;
+}
+.progress-bar-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
+.fill-coverage { background: var(--green); }
+.fill-duplication { background: var(--orange); }
+
+.rating-circle {
+  width: 46px; height: 46px;
+  border-radius: 50%;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.1rem;
+  display: flex; align-items: center; justify-content: center;
+}
+.rating-a { background: var(--green); }
+.rating-b { background: #8bc98f; }
+.rating-c { background: var(--yellow); color: #4a3b00; }
+.rating-d { background: var(--orange); }
+.rating-e { background: var(--red); }
+.rating-na { background: var(--gray); }
+
+/* ---------------- Health score (resumen ejecutivo) ---------------- */
+.health-hero {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  background: var(--bg-card);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 22px 26px;
+  margin-bottom: 20px;
+  animation: slideUp 0.4s ease both;
+}
+
+.health-score-circle {
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  color: #fff;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.05;
+  box-shadow: var(--shadow-card-hover);
+}
+.health-score-number { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.02em; }
+.health-score-letter { font-size: 0.75rem; font-weight: 700; opacity: 0.9; }
+
+.health-hero-body { min-width: 0; }
+.health-hero-eyebrow {
+  margin: 0 0 2px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.health-hero-label {
+  margin: 0 0 4px;
+  font-size: 1.5rem;
+  letter-spacing: -0.01em;
+}
+.health-hero-detail {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--text-muted);
+}
+
+.health-hero-trend {
+  margin-left: auto;
+  flex-shrink: 0;
+  width: 220px;
+  text-align: center;
+}
+.health-trend-label {
+  margin: 0 0 6px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+/* Contenedor de alto FIJO para el sparkline: sin esto, Chart.js con
+   maintainAspectRatio:false estira el canvas para llenar el alto, el
+   contenedor crece para contenerlo, y eso vuelve a disparar el resize
+   -> el gráfico crecía infinitamente y rompía la tarjeta. */
+.health-trend-chart {
+  position: relative;
+  width: 100%;
+  height: 56px;
+}
+.health-trend-chart canvas {
+  display: block;
+}
+.health-trend-empty {
+  margin: 0;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.health-trend-empty i { font-size: 1.2rem; }
+
+@media (max-width: 560px) {
+  .health-hero { flex-direction: column; text-align: center; padding: 20px; }
+  .health-hero-trend { margin-left: 0; width: 100%; }
+}
+
+/* ---------------- Gráficos ---------------- */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.chart-card-wide { grid-column: span 3; }
+
+@media (max-width: 1100px) {
+  .charts-grid { grid-template-columns: repeat(2, 1fr); }
+  .chart-card-wide { grid-column: span 2; }
+}
+@media (max-width: 720px) {
+  .charts-grid { grid-template-columns: 1fr; }
+  .chart-card-wide { grid-column: span 1; }
+}
+
+.chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 20px;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: box-shadow 0.2s ease;
+  cursor: grab;
+}
+.chart-card:active { cursor: grabbing; }
+.chart-card h3 {
+  font-size: 0.9rem;
+  margin: 0 0 14px;
+  color: var(--text-main);
+  font-weight: 600;
+}
+.chart-card canvas { flex: 1; max-height: 280px; }
+
+/* ---------------- Reordenar tarjetas por drag & drop (SortableJS) ---------------- */
+.reorder-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin: -8px 0 12px;
+}
+.reorder-hint {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.reorder-hint i { font-size: 0.8rem; }
+.reorder-reset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.reorder-reset-btn:hover { background: rgba(142, 142, 147, 0.14); color: var(--text-main); }
+
+.card-drag-handle {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  opacity: 0;
+  cursor: grab;
+  transition: opacity 0.15s ease, background 0.15s ease;
+  z-index: 10;
+}
+.metric-card:hover .card-drag-handle,
+.metric-card:focus-within .card-drag-handle,
+.chart-card:hover .card-drag-handle,
+.chart-card:focus-within .card-drag-handle {
+  opacity: 1;
+}
+.card-drag-handle:hover { background: rgba(142, 142, 147, 0.16); color: var(--text-main); }
+.card-drag-handle:active { cursor: grabbing; }
+
+/* Estados que agrega SortableJS mientras se arrastra */
+.sortable-chosen { box-shadow: var(--shadow-card-hover); }
+.sortable-drag { opacity: 0.9; }
+.sortable-ghost {
+  opacity: 0.35;
+  border: 1px dashed var(--blue) !important;
+  background: rgba(0, 113, 227, 0.06) !important;
+}
+.sortable-ghost .card-drag-handle { opacity: 0; }
+
+/* Estado vacío de un gráfico (sin datos que graficar): reemplaza el
+   canvas por un mensaje positivo en vez de dejar un gráfico en blanco
+   o "roto" (p. ej. un pie chart sin datos). */
+.chart-empty-state {
+  flex: 1;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  color: var(--text-muted);
+  min-height: 180px;
+}
+.chart-empty-state i { font-size: 1.8rem; color: var(--green); }
+.chart-empty-state p { margin: 0; font-size: 0.85rem; max-width: 220px; }
+
+/* Estado vacío de la tabla de issues (AG Grid overlayNoRowsTemplate) */
+.grid-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-muted);
+  padding: 24px;
+}
+.grid-empty-state i { font-size: 1.8rem; color: var(--green); }
+.grid-empty-state p { margin: 0; font-size: 0.9rem; }
+
+/* ---------------- Insights ---------------- */
+.insights-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+@media (max-width: 900px) { .insights-grid { grid-template-columns: 1fr; } }
+
+.insight-card {
+  background: var(--bg-card);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 22px;
+}
+.insight-card h3 { font-size: 0.95rem; margin: 0 0 14px; }
+
+.insight-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.insight-item {
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  font-size: 0.88rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  line-height: 1.45;
+}
+.insight-danger { background: rgba(255, 59, 48, 0.08); color: #c62828; }
+[data-theme="dark"] .insight-danger { color: #ff6961; }
+.insight-warning { background: rgba(255, 149, 0, 0.08); color: #b3690b; }
+[data-theme="dark"] .insight-warning { color: #ffb340; }
+.insight-success { background: rgba(52, 199, 89, 0.08); color: #248a3d; }
+[data-theme="dark"] .insight-success { color: #30d158; }
+.insight-info { background: rgba(0, 113, 227, 0.08); color: #0071e3; }
+
+/* ---------------- Tabla de issues ---------------- */
+.issues-section {
+  background: var(--bg-card);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 22px;
+}
+
+.issues-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.issues-header h3 { margin: 0; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
+.issues-count-badge {
+  background: rgba(0, 113, 227, 0.12);
+  color: var(--blue);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+
+.issues-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.input-minimal, .select-minimal {
+  background: rgba(142, 142, 147, 0.1);
+  border: 1px solid transparent;
+  color: var(--text-main);
+  border-radius: 999px;
+  font-size: 0.82rem;
+  padding: 8px 14px;
+}
+.input-minimal { min-width: 220px; }
+.input-minimal:focus, .select-minimal:focus {
+  outline: none;
+  border-color: var(--blue);
+  background: var(--bg-card);
+}
+
+.search-input-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.search-input-wrap .search-icon {
+  position: absolute;
+  left: 10px;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  pointer-events: none;
+}
+.search-input-wrap .input-minimal {
+  padding-left: 32px;
+}
+
+/* ---------------- Select personalizado (estilo "material") ----------------
+   Los <select> nativos no se pueden maquetar de forma consistente entre
+   navegadores (el menú desplegable con options es del sistema operativo).
+   Se reemplaza visualmente por un botón + panel flotante propios, estilo
+   Apple/material: tarjeta con esquinas redondeadas, sombra de elevación,
+   resaltado del hover/selección con el azul de la paleta y check a la
+   derecha. El <select> original se mantiene oculto mas funcional (sigue
+   disparando "change" y conservando su .value), así todo el JS existente
+   (filtros, selector de proyecto) sigue funcionando sin cambios. */
+.custom-select {
+  position: relative;
+  display: inline-flex;
+}
+
+.custom-select-native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.custom-select-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: rgba(142, 142, 147, 0.1);
+  border: 1px solid transparent;
+  color: var(--text-main);
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-family: inherit;
+  padding: 8px 14px;
+  cursor: pointer;
+  min-width: 170px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.custom-select-trigger:hover { background: rgba(142, 142, 147, 0.18); }
+.custom-select.open .custom-select-trigger,
+.custom-select-trigger:focus-visible {
+  outline: none;
+  border-color: var(--blue);
+  background: var(--bg-card);
+}
+
+.custom-select-trigger.trigger-pill {
+  background: var(--bg-card);
+  border: 1px solid var(--hairline);
+  font-weight: 500;
+  min-width: 0;
+  max-width: 220px;
+}
+
+.custom-select-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.custom-select-chevron {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+.custom-select.open .custom-select-chevron { transform: rotate(180deg); }
+
+.custom-select-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 100%;
+  width: max-content;
+  max-width: 280px;
+  max-height: 260px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--bg-card);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card-hover);
+  padding: 6px;
+  z-index: 2000;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px) scale(0.98);
+  transform-origin: top left;
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease;
+}
+.custom-select.open .custom-select-panel {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+}
+
+.custom-select-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.84rem;
+  color: var(--text-main);
+  cursor: pointer;
+  white-space: normal;
+  word-break: break-word;
+  transition: background 0.1s ease;
+}
+.custom-select-option:hover { background: rgba(0, 113, 227, 0.08); }
+.custom-select-option.selected {
+  background: rgba(0, 113, 227, 0.12);
+  color: var(--blue);
+  font-weight: 600;
+}
+.custom-select-option .option-check {
+  font-size: 0.75rem;
+  color: var(--blue);
+  opacity: 0;
+}
+.custom-select-option.selected .option-check { opacity: 1; }
+
+/* ---------------- Tabla de issues (AG Grid) ---------------- */
+.issues-ag-grid {
+  width: 100%;
+  height: 620px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  --ag-font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+  --ag-font-size: 0.83rem;
+  --ag-background-color: var(--bg-card);
+  --ag-header-background-color: var(--bg-card);
+  --ag-odd-row-background-color: rgba(142, 142, 147, 0.04);
+  --ag-row-hover-color: rgba(142, 142, 147, 0.08);
+  --ag-foreground-color: var(--text-main);
+  --ag-header-foreground-color: var(--text-muted);
+  --ag-border-color: var(--hairline);
+  --ag-row-border-color: var(--hairline);
+  --ag-secondary-border-color: var(--hairline);
+  --ag-header-column-separator-display: none;
+  --ag-cell-horizontal-padding: 12px;
+  --ag-borders: solid 1px;
+  --ag-row-height: 44px;
+  --ag-header-height: 40px;
+}
+.issues-ag-grid .ag-header-cell-label {
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* Las celdas que llevan etiqueta necesitan centrar verticalmente el pill:
+   AG Grid alinea el contenido por line-height, que no aplica a un elemento
+   de alto fijo como .badge-type / .badge-severity. */
+.issues-ag-grid .ag-cell:has(.badge-type),
+.issues-ag-grid .ag-cell:has(.badge-severity) {
+  display: flex;
+  align-items: center;
+}
+.issues-ag-grid code {
+  background: rgba(142, 142, 147, 0.12);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+}
+/* Al imprimir (domLayout "print"), AG Grid renderiza su propia altura;
+   evitamos que el contenedor recorte filas. */
+.issues-ag-grid.ag-layout-print { height: auto !important; }
+
+/* Etiquetas de tipo y severidad.
+   Se buscó que se lean como etiquetas y no como globos: esquinas suaves en
+   vez de píldora completa, alto compacto, peso 600 y un borde tenue del
+   mismo color que le da definición sobre el fondo blanco de la fila. */
+.badge-type, .badge-severity {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  height: 21px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font-size: 0.69rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+}
+/* El texto se recorta si la columna es angosta; el ícono nunca se encoge. */
+.badge-type > span, .badge-severity > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.badge-type > i, .badge-severity > i {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  opacity: 0.9;
+}
+
+/* Tipos */
+.badge-BUG {
+  background: rgba(255, 59, 48, 0.1);
+  border-color: rgba(255, 59, 48, 0.22);
+  color: #c9251c;
+}
+.badge-VULNERABILITY {
+  background: rgba(255, 149, 0, 0.12);
+  border-color: rgba(255, 149, 0, 0.28);
+  color: #a35f00;
+}
+.badge-CODE_SMELL {
+  background: rgba(255, 204, 0, 0.16);
+  border-color: rgba(196, 156, 0, 0.3);
+  color: #7a5c00;
+}
+
+/* Severidades */
+.badge-BLOCKER {
+  background: rgba(139, 26, 26, 0.12);
+  border-color: rgba(139, 26, 26, 0.28);
+  color: var(--color-blocker);
+}
+.badge-CRITICAL {
+  background: rgba(255, 59, 48, 0.1);
+  border-color: rgba(255, 59, 48, 0.22);
+  color: #c9251c;
+}
+.badge-MAJOR {
+  background: rgba(255, 149, 0, 0.12);
+  border-color: rgba(255, 149, 0, 0.28);
+  color: #a35f00;
+}
+.badge-MINOR {
+  background: rgba(255, 204, 0, 0.16);
+  border-color: rgba(196, 156, 0, 0.3);
+  color: #7a5c00;
+}
+.badge-INFO {
+  background: rgba(0, 113, 227, 0.1);
+  border-color: rgba(0, 113, 227, 0.24);
+  color: #0058b0;
+}
+
+/* En modo oscuro los tintes claros se apagan y el texto necesita subir de
+   luminosidad para mantener el contraste. */
+[data-theme="dark"] .badge-BUG,
+[data-theme="dark"] .badge-CRITICAL {
+  background: rgba(255, 69, 58, 0.16);
+  border-color: rgba(255, 69, 58, 0.34);
+  color: #ff8d85;
+}
+[data-theme="dark"] .badge-VULNERABILITY,
+[data-theme="dark"] .badge-MAJOR {
+  background: rgba(255, 159, 10, 0.16);
+  border-color: rgba(255, 159, 10, 0.34);
+  color: #ffb340;
+}
+[data-theme="dark"] .badge-CODE_SMELL,
+[data-theme="dark"] .badge-MINOR {
+  background: rgba(255, 214, 10, 0.14);
+  border-color: rgba(255, 214, 10, 0.3);
+  color: #ffd426;
+}
+[data-theme="dark"] .badge-BLOCKER {
+  background: rgba(255, 69, 58, 0.22);
+  border-color: rgba(255, 69, 58, 0.45);
+  color: #ff6961;
+}
+[data-theme="dark"] .badge-INFO {
+  background: rgba(10, 132, 255, 0.16);
+  border-color: rgba(10, 132, 255, 0.34);
+  color: #6cb4ff;
+}
+
+/* ---------------- Modal de detalle de métrica ---------------- */
+/* Se abre al hacer click en las tarjetas de issues (Bugs, Vulnerabilidades,
+   Code Smells). Ver initMetricDetail() en static/script.js. */
+
+/* Solo las tarjetas con detalle disponible se ven "clickeables". */
+.metric-card-clickable { cursor: pointer; }
+.metric-card-clickable:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+/* Chevron ">" dibujado con bordes (sin depender de una fuente de íconos):
+   aparece al pasar el mouse para indicar que la tarjeta abre un detalle. */
+.metric-card-clickable::after {
+  content: "";
+  position: absolute;
+  right: 16px;
+  bottom: 14px;
+  width: 7px;
+  height: 7px;
+  border-top: 1.5px solid var(--text-muted);
+  border-right: 1.5px solid var(--text-muted);
+  transform: rotate(45deg);
+  opacity: 0;
+  transition: opacity 0.2s ease, right 0.2s ease;
+  pointer-events: none;
+}
+.metric-card-clickable:hover::after,
+.metric-card-clickable:focus-visible::after {
+  opacity: 0.6;
+  right: 13px;
+}
+
+.metric-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.metric-modal[hidden] { display: none; }
+
+.metric-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(3px);
+  animation: fadeIn 0.2s ease;
+}
+
+.metric-modal-panel {
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card-hover);
+  animation: slideUp 0.25s ease;
+  overflow: hidden;
+}
+
+.metric-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 22px 14px;
+  border-bottom: 1px solid var(--hairline);
+  flex-shrink: 0;
+}
+.metric-modal-head h1,
+.metric-modal-head h3 {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+  color: var(--text-main);
+}
+.metric-modal-subtitle {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+.metric-modal-close {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.metric-modal-close:hover {
+  background: rgba(142, 142, 147, 0.14);
+  color: var(--text-main);
+}
+
+.metric-modal-severities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px 22px 0;
+  flex-shrink: 0;
+}
+.metric-modal-sev {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* Los chips del encabezado son botones que filtran la tabla por severidad.
+   Los <span> de la columna "Severidad" de la tabla reusan las mismas
+   clases de color pero no son interactivos. */
+button.metric-modal-sev {
+  border: 1px solid transparent;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s ease, opacity 0.2s ease, transform 0.15s ease;
+  opacity: 0.75;
+}
+button.metric-modal-sev:hover { opacity: 1; transform: translateY(-1px); }
+button.metric-modal-sev.is-active {
+  opacity: 1;
+  border-color: currentColor;
+}
+button.metric-modal-sev:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+.metric-modal-sev.sev-all {
+  background: rgba(142, 142, 147, 0.16);
+  color: var(--text-main);
+}
+.metric-modal-sev.sev-blocker { background: rgba(139,26,26,0.15); color: var(--color-blocker); }
+.metric-modal-sev.sev-critical { background: rgba(255,59,48,0.12); color: var(--red); }
+.metric-modal-sev.sev-major { background: rgba(255,149,0,0.12); color: var(--orange); }
+.metric-modal-sev.sev-minor { background: rgba(255,204,0,0.18); color: #8a6d00; }
+.metric-modal-sev.sev-info { background: rgba(0,113,227,0.12); color: var(--blue); }
+[data-theme="dark"] .metric-modal-sev.sev-blocker { color: #ff6961; }
+[data-theme="dark"] .metric-modal-sev.sev-minor { color: #ffd426; }
+
+.metric-modal-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 22px;
+  flex-shrink: 0;
+}
+.metric-modal-search {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+.metric-modal-search i {
+  position: absolute;
+  left: 12px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.metric-modal-search input {
+  width: 100%;
+  border: 1px solid var(--hairline);
+  background: var(--bg-body);
+  color: var(--text-main);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px 8px 32px;
+  font-size: 0.82rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+.metric-modal-search input:focus { border-color: var(--blue); }
+.metric-modal-count {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.metric-modal-body {
+  flex: 1;
+  /* Imprescindible: un ítem flex tiene min-height:auto por defecto, así que
+     sin esto el contenedor crece con el contenido en vez de encogerse, y
+     overflow-y:auto nunca llega a producir scroll (y por lo tanto el
+     scroll infinito de initMetricDetail() nunca se dispara). */
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 22px 20px;
+}
+.metric-modal-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+.metric-modal-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-card);
+  text-align: left;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--hairline);
+  z-index: 1;
+}
+.metric-modal-table tbody td {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--hairline);
+  color: var(--text-main);
+  vertical-align: top;
+}
+.metric-modal-table tbody tr:hover { background: rgba(142, 142, 147, 0.07); }
+.metric-modal-file {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.73rem;
+}
+.metric-modal-rule {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+/* El mensaje se recorta a 2 líneas; el texto completo queda disponible en
+   el tooltip (static/tooltip.js lo detecta por scrollHeight > clientHeight),
+   así todas las filas mantienen el mismo alto y la tabla se lee mejor. */
+.metric-modal-msg {
+  line-height: 1.4;
+  min-width: 220px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.metric-modal-empty {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  padding: 28px 0;
+}
+/* Indicador de carga del scroll infinito */
+.metric-modal-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 18px 0 6px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  animation: fadeIn 0.2s ease;
+}
+.metric-modal-loader[hidden] { display: none; }
+
+.metric-modal-spinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid var(--hairline);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: metricSpin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes metricSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Aviso de que ya no queda nada por cargar */
+.metric-modal-end {
+  text-align: center;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  padding: 16px 0 4px;
+  margin: 0;
+  opacity: 0.75;
+  animation: fadeIn 0.3s ease;
+}
+.metric-modal-end[hidden] { display: none; }
+
+/* Entrada escalonada de cada tanda nueva de filas. El delay por fila lo
+   asigna initMetricDetail() en JS (25ms de diferencia entre una y otra),
+   así que la tanda "cae" en cascada en vez de aparecer de golpe. */
+.metric-modal-row-new {
+  animation: metricRowIn 0.34s ease both;
+}
+@keyframes metricRowIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .metric-modal-row-new { animation: none; }
+  .metric-modal-spinner { animation-duration: 1.6s; }
+}
+
+@media (max-width: 640px) {
+  .metric-modal { padding: 12px; }
+  .metric-modal-panel { max-height: 92vh; }
+  .metric-modal-head,
+  .metric-modal-severities,
+  .metric-modal-toolbar { padding-left: 16px; padding-right: 16px; }
+  .metric-modal-body { padding-left: 16px; padding-right: 16px; }
+  /* En pantallas chicas la regla es lo más prescindible de la tabla. */
+  .metric-modal-table thead th:nth-child(4),
+  .metric-modal-table tbody td:nth-child(4) { display: none; }
+  .metric-modal-file { max-width: 110px; }
+}
+
+/* ---------------- Componente de tooltips (static/tooltip.js) ----------------
+   El tooltip se inserta como hijo directo del <body> (patrón "portal"), no
+   dentro de la celda que lo dispara, para que no lo recorte el overflow de
+   una tabla ni lo tape un vecino con otro stacking context. */
+.app-tooltip {
+  position: fixed;
+  z-index: 3000; /* por encima del modal de detalle (2000) */
+  max-width: 360px;
+
+  /* Superficie "vidrio esmerilado" al estilo de los popovers del sistema,
+     en línea con el header y las tarjetas del dashboard. */
+  background: rgba(28, 28, 30, 0.92);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  backdrop-filter: saturate(180%) blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f5f5f7;
+
+  font-size: 0.74rem;
+  line-height: 1.5;
+  font-weight: 450;
+  letter-spacing: -0.005em;
+  padding: 8px 11px;
+  border-radius: 10px;
+  box-shadow:
+    0 6px 22px rgba(0, 0, 0, 0.22),
+    0 1px 3px rgba(0, 0, 0, 0.16);
+
+  pointer-events: none; /* nunca debe robarle el hover al elemento */
+  /* Los textos largos (mensajes de issues, rutas) deben poder cortarse. */
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: left;
+
+  opacity: 0;
+  transform: translateY(4px) scale(0.97);
+  transform-origin: bottom center;
+  transition:
+    opacity 0.16s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.16s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.app-tooltip.is-visible { opacity: 1; transform: translateY(0) scale(1); }
+.app-tooltip[hidden] { display: none; }
+
+/* Cuando se voltea hacia abajo, entra desde el otro lado. */
+.app-tooltip.app-tooltip-below {
+  transform: translateY(-4px) scale(0.97);
+  transform-origin: top center;
+}
+.app-tooltip.app-tooltip-below.is-visible { transform: translateY(0) scale(1); }
+
+/* Puntita que apunta al elemento. --arrow-x lo calcula tooltip.js según
+   dónde quedó el elemento, porque el tooltip se recorta contra los bordes
+   de la ventana y entonces no siempre queda centrado sobre su objetivo. */
+.app-tooltip::after {
+  content: "";
+  position: absolute;
+  left: var(--arrow-x, 50%);
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  background: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transform: rotate(45deg);
+}
+.app-tooltip::after {
+  bottom: -5px;
+  border-top: none;
+  border-left: none;
+}
+.app-tooltip.app-tooltip-below::after {
+  bottom: auto;
+  top: -5px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: none;
+  border-right: none;
+}
+/* Si la puntita quedaría fuera del tooltip (elemento muy al borde de la
+   pantalla), se oculta en vez de asomar por una esquina. */
+.app-tooltip.app-tooltip-no-arrow::after { display: none; }
+
+/* Rutas de archivo y claves de regla: monoespaciada y SIEMPRE en una sola
+   línea. Cortar una ruta en varios renglones hace difícil seguirla, así que
+   se deja crecer a lo ancho (hasta el ancho de la ventana) en vez de
+   envolver. Los tooltips de texto común mantienen los saltos de línea. */
+.app-tooltip.app-tooltip-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  max-width: min(92vw, 760px);
+  /* Si aun así no entra (ruta extremadamente larga), se recorta con "…"
+     en vez de romper el diseño. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-theme="dark"] .app-tooltip {
+  background: rgba(58, 58, 60, 0.94);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 6px 24px rgba(0, 0, 0, 0.55),
+    0 1px 3px rgba(0, 0, 0, 0.4);
+}
+[data-theme="dark"] .app-tooltip::after,
+[data-theme="dark"] .app-tooltip.app-tooltip-below::after {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+/* Utilidad genérica: recorta a una línea con "…" y habilita el tooltip
+   automático. Úsese en cualquier texto que pueda desbordar su contenedor. */
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0; /* necesario para que funcione dentro de flex/grid */
+}
+
+/* Variante de varias líneas: recorta a N líneas (2 por defecto). El
+   tooltip lo detecta por scrollHeight > clientHeight. */
+.truncate-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-tooltip { transition: none; }
+}
+
+@media print {
+  .app-tooltip { display: none !important; }
+}
+
+/* ---------------- Footer ---------------- */
+.report-footer {
+  border-top: 1px solid var(--hairline);
+  color: var(--text-muted);
+  padding: 22px 28px 18px;
+  background: var(--bg-card);
+  flex-shrink: 0;
+}
+.footer-grid {
+  max-width: 1440px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  justify-content: center;
+  font-size: 0.78rem;
+}
+.footer-grid span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(142, 142, 147, 0.08);
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  padding: 5px 12px;
+}
+.footer-grid span i { color: var(--blue); font-size: 0.85rem; }
+
+.footer-brand {
+  max-width: 420px;
+  margin: 18px auto 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.footer-brand-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--hairline) 50%, transparent);
+}
+.footer-brand-text {
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+.footer-brand-name {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--blue);
+}
+
+/* ---------------- Overlay de carga (cambio de proyecto / actualizar) ---------------- */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(245, 245, 247, 0.78);
+  backdrop-filter: saturate(180%) blur(24px);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+[data-theme="dark"] .loading-overlay {
+  background: rgba(0, 0, 0, 0.78);
+}
+.loading-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+/* Loader: orbe animado (canvas, static/orb.js) mientras se consulta
+   SonarQube. Reemplaza al viejo search.gif. */
+.loading-orb {
+  width: 92px;
+  height: 92px;
+  display: block;
+}
+
+.loading-text {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-main);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  letter-spacing: -0.01em;
+}
+
+.loading-text .dots {
+  display: inline-flex;
+}
+
+.loading-text .dots span {
+  display: inline-block;
+  animation: dotPulse 1.4s ease-in-out infinite;
+  opacity: 0.2;
+}
+.loading-text .dots span:nth-child(1) { animation-delay: 0s; }
+.loading-text .dots span:nth-child(2) { animation-delay: 0.2s; }
+.loading-text .dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes dotPulse {
+  0%, 80%, 100% { opacity: 0.2; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-3px); }
+}
+
+/* Barra de progreso indeterminada: se muestra solo durante la exportación a
+   PDF (no sabemos el % real de avance, así que es una animación continua
+   que transmite "se está trabajando en esto" en vez de un valor exacto). */
+.loading-progress-track {
+  width: 220px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(142, 142, 147, 0.18);
+  overflow: hidden;
+  margin-top: 4px;
+}
+.loading-progress-fill {
+  width: 40%;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--blue);
+  animation: progressIndeterminate 1.3s ease-in-out infinite;
+}
+@keyframes progressIndeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+
+/* ---------------- Popup de exportación a PDF (no bloqueante) ---------------- */
+.pdf-export-toast {
+  position: fixed;
+  left: 24px;
+  bottom: 24px;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card-hover);
+  padding: 14px 18px;
+  max-width: 340px;
+  animation: toastIn 0.25s ease;
+}
+.pdf-export-toast[hidden] { display: none; }
+
+.pdf-export-toast-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: block;
+}
+
+.pdf-export-toast-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.pdf-export-toast-title {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+.pdf-export-toast-message {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pdf-export-toast .loading-progress-track { width: 100%; margin-top: 6px; }
+
+/* ---------------- Comparar proyectos (/compare) ---------------- */
+.compare-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+.compare-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(142, 142, 147, 0.08);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.compare-checkbox input { accent-color: var(--blue); }
+
+.table-responsive { width: 100%; overflow-x: auto; }
+
+/* ---------------- Selector de proyectos (/select-project) ---------------- */
+.project-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+}
+.project-picker-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(142, 142, 147, 0.08);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  text-decoration: none;
+  color: var(--text-main);
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+.project-picker-card:hover {
+  background: rgba(0, 113, 227, 0.08);
+  border-color: rgba(0, 113, 227, 0.3);
+}
+.project-picker-card:active { transform: scale(0.98); }
+.project-picker-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 113, 227, 0.12);
+  color: var(--blue);
+  font-size: 1.05rem;
+  flex-shrink: 0;
+}
+.project-picker-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.project-picker-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.project-picker-meta {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.project-picker-arrow { color: var(--text-muted); flex-shrink: 0; }
+
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+.compare-table th, .compare-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--hairline);
+  text-align: center;
+  white-space: nowrap;
+}
+.compare-table th:first-child, .compare-table td:first-child {
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-muted);
+  position: sticky;
+  left: 0;
+  background: var(--bg-card);
+}
+.compare-table thead th {
+  color: var(--text-main);
+  font-weight: 700;
+  border-bottom: 2px solid var(--hairline);
+}
+.compare-table thead th a { color: var(--blue); text-decoration: none; }
+.compare-table thead th a:hover { text-decoration: underline; }
+.compare-table tbody tr:hover { background: rgba(142, 142, 147, 0.06); }
+
+/* ---------------- Responsive / mobile ---------------- */
+@media (max-width: 640px) {
+  .header-inner { padding: 14px 16px; }
+  .main-content { padding: 20px 16px 48px; }
+
+  .project-title { font-size: 1.1rem; }
+  .header-meta { gap: 8px; }
+  .header-meta span { font-size: 0.72rem; padding: 3px 0; }
+
+  .cards-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .metric-card { padding: 14px; gap: 12px; }
+  .metric-value { font-size: 1.25rem; }
+
+  /* En pantallas chicas el ícono de arrastre queda siempre visible (no
+     hay "hover" real en touch), y se esconde el texto de ayuda para no
+     competir por espacio con el botón de restablecer orden. */
+  .card-drag-handle { opacity: 1; }
+  .reorder-hint { display: none; }
+
+  .health-score-circle { width: 76px; height: 76px; }
+  .health-score-number { font-size: 1.4rem; }
+  .health-hero-label { font-size: 1.2rem; }
+
+  .issues-controls { flex-direction: column; align-items: stretch; }
+  .search-input-wrap, .input-minimal { min-width: 0; width: 100%; }
+  .custom-select-trigger { min-width: 0; width: 100%; }
+  #gridDensityToggle { justify-content: center; }
+
+  /* La tabla en mobile no necesita tanta altura fija; deja más lugar
+     al resto del contenido y sigue scrolleando internamente. */
+  .issues-ag-grid { height: 420px; }
+
+  .footer-brand { max-width: 100%; }
+  .pdf-export-toast { left: 12px; right: 12px; max-width: none; }
+  .floating-controls { right: 14px; bottom: 14px; }
+  .fab { width: 40px; height: 40px; }
+}
+
+/* ---------------- Impresión / Exportar a PDF ---------------- */
+@page {
+  size: A4;
+  margin: 12mm 10mm;
+}
+
+/* ---------------- Botón de perfil (usuario logueado con SonarQube) ---------------- */
+.user-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--blue);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.user-avatar-lg { width: 38px; height: 38px; font-size: 0.95rem; }
+
+.user-menu { position: relative; }
+
+.user-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 5px;
+  border-radius: 999px;
+  border: 1px solid var(--hairline);
+  background: var(--bg-card);
+  color: var(--text-main);
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.user-menu-trigger:hover,
+.user-menu-trigger[aria-expanded="true"] {
+  background: rgba(0, 113, 227, 0.08);
+  border-color: rgba(0, 113, 227, 0.3);
+}
+.user-menu-name {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.user-menu-caret {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+.user-menu-trigger[aria-expanded="true"] .user-menu-caret { transform: rotate(180deg); }
+
+.user-menu-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 240px;
+  background: var(--bg-card);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card-hover);
+  overflow: hidden;
+  z-index: 1200;
+  animation: toastIn 0.15s ease;
+}
+.user-menu-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  border-bottom: 1px solid var(--hairline);
+}
+.user-menu-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.user-menu-fullname {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.user-menu-host {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  color: var(--green);
+  font-weight: 500;
+}
+.user-menu-logout {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  color: var(--red);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+.user-menu-logout:hover { background: rgba(255, 59, 48, 0.1); }
+.user-menu-logout i { font-size: 1rem; }
+
+/* ---------------- Login (minimalista, una sola tarjeta centrada) ---------------- */
+.login-body {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  /* Grilla de puntos muy sutil: le da textura al fondo sin distraer del
+     formulario, y evoca algo "técnico" acorde a una pantalla de login. */
+  background-image: radial-gradient(var(--hairline) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+/* Dos manchas de color difuminadas flotando detrás de la tarjeta — solo
+   decorativas (pointer-events:none) y por debajo del contenido real. */
+.login-body::before,
+.login-body::after {
+  content: "";
+  position: fixed;
+  width: 480px;
+  height: 480px;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.28;
+  pointer-events: none;
+  z-index: 0;
+}
+.login-body::before {
+  top: -160px;
+  left: -140px;
+  background: radial-gradient(circle, var(--blue), transparent 70%);
+  animation: loginBlobFloat 16s ease-in-out infinite;
+}
+.login-body::after {
+  bottom: -160px;
+  right: -140px;
+  width: 420px;
+  height: 420px;
+  background: radial-gradient(circle, var(--green), transparent 70%);
+  animation: loginBlobFloat 20s ease-in-out infinite reverse;
+}
+@keyframes loginBlobFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(36px, 24px) scale(1.1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .login-body::before, .login-body::after { animation: none; }
+}
+
+.login-wrap {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+}
+.login-card {
+  width: 100%;
+  background: var(--bg-card);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card-hover);
+  padding: 30px 26px;
+}
+
+.login-card-head { text-align: center; margin-bottom: 22px; }
+.login-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: rgba(0, 113, 227, 0.1);
+  color: var(--blue);
+  font-size: 1.15rem;
+  margin-bottom: 12px;
+}
+.login-card-head h1 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 8px;
+  color: var(--text-main);
+}
+.login-subtitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  background: rgba(142, 142, 147, 0.12);
+  padding: 4px 10px;
+  border-radius: 999px;
+  margin: 0;
+}
+
+.login-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 59, 48, 0.12);
+  color: #d70015;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+[data-theme="dark"] .login-error { color: #ff6961; }
+
+/* Switch "Usuario y contraseña" / "Token de acceso" */
+.login-mode-switch {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 100%;
+  background: var(--bg-body);
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  padding: 3px;
+  margin-bottom: 4px;
+}
+.login-mode-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  height: calc(100% - 6px);
+  background: var(--bg-card);
+  border-radius: 999px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 0;
+}
+.login-mode-switch[data-active="token"] .login-mode-thumb {
+  transform: translateX(100%);
+}
+.login-mode-btn {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 8px 6px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  font-family: inherit;
+}
+.login-mode-btn.is-active { color: var(--blue); }
+.login-mode-btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+.login-form { display: flex; flex-direction: column; }
+.login-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: 14px 0 6px;
+}
+.login-label:first-of-type { margin-top: 0; }
+/* La label de "Contraseña" vive en su propio div (#passwordGroup, para
+   poder ocultarla entera en modo token), así que también cuenta como
+   ":first-of-type" dentro de ese div y perdería el margen normal de
+   14px respecto del campo de usuario. Se restaura acá explícitamente. */
+#passwordGroup .login-label:first-of-type { margin-top: 14px; }
+
+.login-input-wrap { position: relative; display: flex; align-items: center; }
+.login-input-icon {
+  position: absolute;
+  left: 14px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+.login-input {
+  width: 100%;
+  border: 1px solid var(--hairline);
+  background: var(--bg-body);
+  color: var(--text-main);
+  border-radius: var(--radius-sm);
+  padding: 11px 14px 11px 40px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.login-input-has-action { padding-right: 40px; }
+.login-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15); }
+
+.login-toggle-password {
+  position: absolute;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.login-toggle-password:hover { background: rgba(142, 142, 147, 0.14); color: var(--text-main); }
+
+.login-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin: 12px 0 0;
+}
+.login-hint i { color: var(--blue); margin-top: 1px; }
+
+.login-submit {
+  justify-content: center;
+  width: 100%;
+  margin-top: 20px;
+  padding: 11px 16px;
+  font-size: 0.88rem;
+}
+
+.login-security-note {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 340px;
+  text-align: center;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+.login-security-note i { color: var(--green); font-size: 0.85rem; flex-shrink: 0; }
+
+.login-footer-note {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+.login-footer-note strong { color: var(--text-main); }
+
+@media print {
+  /* Fuerza paleta clara aunque el modo oscuro esté activo, para que el
+     PDF resultante siempre sea legible e imprimible. */
+  :root, [data-theme="dark"] {
+    --bg-body: #ffffff;
+    --bg-card: #ffffff;
+    --bg-header: #ffffff;
+    --text-main: #1d1d1f;
+    --text-muted: #4a4a4d;
+    --hairline: #dcdce0;
+    --shadow-card: none;
+    --shadow-card-hover: none;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  .no-print,
+  .floating-controls,
+  .toast-container,
+  .loading-overlay {
+    display: none !important;
+  }
+
+  html, body { background: #fff; }
+  body { font-size: 11px; animation: none; }
+
+  .main-content { padding: 0; max-width: 100%; }
+  section { margin-bottom: 14px; }
+
+  .report-header {
+    position: static;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .header-inner { padding: 0 0 10px; }
+
+  /* Tarjetas de métricas: más columnas para aprovechar el ancho de la hoja */
+  .cards-grid { grid-template-columns: repeat(4, 1fr); gap: 8px; }
+
+  .health-hero, .metric-card, .chart-card, .insight-card, .issues-section {
+    box-shadow: none;
+    border: 1px solid var(--hairline);
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .metric-card:hover { transform: none; }
+
+  .charts-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .chart-card-wide { grid-column: span 2; }
+  .chart-card { min-height: 200px; padding: 12px; }
+  .chart-card canvas { max-height: 170px !important; }
+
+  .insights-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  /* La tabla de issues (AG Grid) arranca en página nueva. En impresión
+     el JS cambia su domLayout a "print", lo que hace que renderice
+     todas las filas sin virtualización ni scroll interno. */
+  .issues-section {
+    break-before: page;
+    page-break-before: always;
+    padding: 12px;
+  }
+  .issues-ag-grid { font-size: 9.5px; --ag-row-height: 30px; --ag-header-height: 28px; }
+  .issues-ag-grid .ag-row { break-inside: avoid; page-break-inside: avoid; }
+
+  .report-footer { break-inside: avoid; page-break-inside: avoid; }
+}

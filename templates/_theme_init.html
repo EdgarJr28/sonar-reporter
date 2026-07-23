@@ -1,0 +1,18 @@
+<!--
+  templates/_theme_init.html
+  Script bloqueante mínimo que va en <head>, ANTES de que el navegador pinte
+  la página. Aplica el tema guardado en localStorage al <html> apenas se
+  puede, para que no se vea un flash de tema claro antes de que cargue el
+  resto del JS. Se incluye en TODAS las páginas (dashboard, select_project,
+  compare, login, error) para que el modo oscuro sea consistente en toda
+  la app, no solo en el dashboard.
+-->
+<script>
+  (function () {
+    try {
+      if (localStorage.getItem("sonar-report-theme") === "dark") {
+        document.documentElement.setAttribute("data-theme", "dark");
+      }
+    } catch (e) { /* localStorage no disponible (modo privado, etc.) */ }
+  })();
+</script>

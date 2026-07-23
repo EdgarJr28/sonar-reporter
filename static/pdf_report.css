@@ -1,0 +1,251 @@
+/* =============================================================
+   static/pdf_report.css — Hoja de estilos EXCLUSIVA del PDF formal
+   generado con WeasyPrint (templates/pdf_report.html). No es el CSS
+   del dashboard: usa el subconjunto de CSS para "paged media" que
+   soporta WeasyPrint (@page, string-set/string(), counter(page)).
+   ============================================================= */
+
+@page {
+  size: A4;
+  margin: 2.6cm 1.6cm 2.2cm 1.6cm;
+
+  @top-center {
+    content: string(reportproject) "  ·  Reporte de Calidad de Código";
+    font-size: 8.5pt;
+    color: #6e6e73;
+    border-bottom: 0.75pt solid #dcdce0;
+    padding-bottom: 8pt;
+    width: 100%;
+  }
+
+  @bottom-center {
+    content: "Página " counter(page) " de " counter(pages);
+    font-size: 8.5pt;
+    color: #6e6e73;
+  }
+}
+
+/* La portada no lleva encabezado/pie de página */
+@page cover {
+  margin: 0;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: "Helvetica Neue", Arial, "DejaVu Sans", sans-serif;
+  color: #1d1d1f;
+  font-size: 10pt;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ---------------- Portada ---------------- */
+.cover-page {
+  page: cover;
+  break-after: page;
+  width: 100%;
+  height: 29.7cm;
+  padding: 2cm 2cm;
+  background: linear-gradient(180deg, #0b1220 0%, #10213b 55%, #0b1220 100%);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.cover-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.cover-brand { display: flex; align-items: center; gap: 10pt; }
+.cover-logo {
+  width: 30pt;
+  height: 30pt;
+  border-radius: 8pt;
+  background: #0071e3;
+  color: #fff;
+  font-weight: 700;
+  font-size: 11pt;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cover-brand-name { font-size: 10pt; letter-spacing: 0.02em; color: #c7d2e0; }
+.cover-date { font-size: 9.5pt; color: #90a2bd; }
+
+.cover-middle { margin: 60pt 0 30pt; }
+.cover-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 9pt;
+  color: #6ea8ff;
+  margin: 0 0 10pt;
+}
+.cover-project-title {
+  font-size: 30pt;
+  font-weight: 700;
+  margin: 0 0 8pt;
+  letter-spacing: -0.01em;
+}
+.cover-project-key { font-size: 11pt; color: #9db2cc; margin: 0 0 20pt; }
+
+.cover-qg {
+  display: inline-block;
+  padding: 6pt 16pt;
+  border-radius: 999pt;
+  font-size: 10pt;
+  font-weight: 700;
+}
+.cover-qg.qg-ok { background: rgba(52, 199, 89, 0.18); color: #34d976; }
+.cover-qg.qg-error { background: rgba(255, 59, 48, 0.18); color: #ff6b60; }
+.cover-qg.qg-none { background: rgba(255, 255, 255, 0.12); color: #c7d2e0; }
+
+.cover-health {
+  display: flex;
+  align-items: center;
+  gap: 12pt;
+  margin-top: 14pt;
+}
+.cover-health-score {
+  width: 44pt;
+  height: 44pt;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1.5pt solid rgba(255, 255, 255, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16pt;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.cover-health-text { font-size: 9pt; color: #c7d2e0; line-height: 1.4; }
+.cover-health-text strong { color: #ffffff; font-size: 10pt; }
+
+.cover-summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20pt 0;
+}
+.cover-summary-table td {
+  text-align: center;
+  padding: 12pt 6pt;
+  border-left: 0.75pt solid rgba(255, 255, 255, 0.15);
+}
+.cover-summary-table td:first-child { border-left: none; }
+.cover-summary-value { display: block; font-size: 20pt; font-weight: 700; }
+.cover-summary-label { display: block; font-size: 8.5pt; color: #9db2cc; margin-top: 3pt; }
+
+.cover-footer { font-size: 8.5pt; color: #90a2bd; }
+.cover-footer p { margin: 2pt 0; }
+.cover-confidential { margin-top: 10pt !important; font-style: italic; }
+
+/* Ancla invisible usada solo para fijar el texto del encabezado corrido
+   (string-set) — no ocupa espacio visible en el documento. */
+.running-anchor {
+  string-set: reportproject content();
+  height: 0;
+  margin: 0;
+  padding: 0;
+  font-size: 0;
+  line-height: 0;
+  overflow: hidden;
+}
+
+/* ---------------- Secciones del cuerpo ---------------- */
+.pdf-section { margin-bottom: 18pt; }
+.page-break-before { break-before: page; page-break-before: always; }
+
+.section-title {
+  font-size: 14pt;
+  font-weight: 700;
+  color: #0b1220;
+  border-bottom: 1.5pt solid #0071e3;
+  padding-bottom: 6pt;
+  margin: 0 0 12pt;
+}
+.subsection-title {
+  font-size: 11.5pt;
+  font-weight: 700;
+  margin: 18pt 0 8pt;
+}
+.section-intro {
+  font-size: 9.5pt;
+  color: #4a4a4d;
+  margin: 0 0 12pt;
+}
+
+/* ---------------- Tablas formales ---------------- */
+.formal-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9pt;
+  margin-bottom: 10pt;
+}
+.formal-table thead th {
+  text-align: left;
+  background: #f0f2f6;
+  color: #4a4a4d;
+  font-size: 8pt;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 6pt 8pt;
+  border-bottom: 1pt solid #d8d8dc;
+}
+.formal-table tbody td {
+  padding: 6pt 8pt;
+  border-bottom: 0.5pt solid #e5e5ea;
+  vertical-align: top;
+}
+.formal-table tbody tr:nth-child(even) { background: #fafafc; }
+.formal-table.compact td, .formal-table.compact th { font-size: 8.5pt; padding: 5pt 7pt; }
+
+/* ---------------- Listas de conclusiones/recomendaciones ---------------- */
+.formal-list { margin: 0 0 16pt; padding-left: 18pt; }
+.formal-list li { margin-bottom: 7pt; font-size: 9.5pt; }
+.conclusion-danger { color: #b3261e; }
+.conclusion-warning { color: #9a5b00; }
+.conclusion-success { color: #1c6b34; }
+
+/* ---------------- Gráficos ---------------- */
+.chart-row {
+  display: flex;
+  gap: 10pt;
+  margin-bottom: 10pt;
+}
+.chart-box {
+  flex: 1;
+  border: 0.75pt solid #e5e5ea;
+  border-radius: 6pt;
+  padding: 8pt;
+  text-align: center;
+}
+.chart-box.wide { flex: 1; }
+.chart-box img { max-width: 100%; height: auto; }
+
+/* ---------------- Tabla de issues ---------------- */
+.issues-pdf-table { font-size: 8pt; }
+.issues-pdf-table thead { display: table-header-group; }
+.issues-pdf-table tbody tr { break-inside: avoid; }
+.issues-pdf-table .col-file, .issues-pdf-table .col-rule { word-break: break-all; }
+.issues-pdf-table .col-message { max-width: 220pt; }
+
+.pill {
+  display: inline-block;
+  padding: 1.5pt 6pt;
+  border-radius: 999pt;
+  font-size: 7pt;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.pill-type-BUG { background: rgba(255,59,48,0.14); color: #b3261e; }
+.pill-type-VULNERABILITY { background: rgba(255,149,0,0.16); color: #9a5b00; }
+.pill-type-CODE_SMELL { background: rgba(255,204,0,0.22); color: #7a5f00; }
+
+.pill-sev-BLOCKER { background: rgba(139,26,26,0.18); color: #6e1414; }
+.pill-sev-CRITICAL { background: rgba(255,59,48,0.14); color: #b3261e; }
+.pill-sev-MAJOR { background: rgba(255,149,0,0.16); color: #9a5b00; }
+.pill-sev-MINOR { background: rgba(255,204,0,0.22); color: #7a5f00; }
+.pill-sev-INFO { background: rgba(0,113,227,0.14); color: #0b5cad; }
